@@ -297,6 +297,8 @@ h3 {
   border: 1px solid rgba(255,255,255,0.2);
   color: #fff;
   border-left: #1c3883;
+   text-decoration: none;
+  color: inherit;
 }
 .links .card {
   border-left: 2px solid rgba(179, 201, 248, 0.6);
@@ -466,7 +468,7 @@ h3 {
   position: relative;
 }
 .theme-mini {
-  margin-top: auto; /* میچسبه پایین */
+  margin-top: auto; 
 
   width: 70px;
   height: 28px;
