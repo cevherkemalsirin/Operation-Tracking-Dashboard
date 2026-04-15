@@ -105,9 +105,9 @@ export const createTicket = () => {
     assignedGroup: groupList[getRandomInt(0, groupList.length - 1)],
     createdBy: names[getRandomInt(0, names.length - 1)],
     priority: getRandomInt(1, 5),
-    categoty: categoryList[getRandomInt(0, categoryList - 1)],
+    categoty: categoryList[getRandomInt(0, categoryList.length - 1)],
     customer: names[getRandomInt(0, names.length - 1)],
-    source: sourceList[getRandomInt(0, sourceList - 1)],
+    source: sourceList[getRandomInt(0, sourceList.length - 1)],
     date: new Date().toISOString().split('T')[0]
     };
 
@@ -116,7 +116,3 @@ export const createTicket = () => {
 export const generateTickets = (count) => {
     return Array.from({ length: count}, () => createTicket())
 };
-
-const jsonString = JSON.stringify(ticket);
-
-console.log(jsonString);
