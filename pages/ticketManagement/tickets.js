@@ -6,7 +6,8 @@ const state = {
     search: "",
     status: "",
     priority: ""
-  }
+  },
+  editingTicketId: null
 };
 
 function renderStatsCards(tickets) {
@@ -73,6 +74,41 @@ function getVisibleTickets() {
   });
 }
 
+function openEditModal(ticketId) {
+  const ticket = state.allTickets.find((item) => item.id === ticketId);
+  const modal = document.getElementById("edit-modal");
+  const idInput = document.getElementById("edit-id");
+  const titleInput = document.getElementById("edit-title");
+  const statusInput = document.getElementById("edit-status");
+  const priorityInput = document.getElementById("edit-priority");
+  const customerInput = document.getElementById("edit-customer");
+
+  if (!ticket || !modal || !idInput || !titleInput || !statusInput || !priorityInput || !customerInput) {
+    return;
+  }
+
+  state.editingTicketId = ticketId;
+  idInput.value = String(ticket.id);
+  titleInput.value = ticket.title;
+  statusInput.value = ticket.status;
+  priorityInput.value = String(ticket.priority);
+  customerInput.value = ticket.customer;
+
+  modal.classList.add("active");
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function closeEditModal() {
+  const modal = document.getElementById("edit-modal");
+  const form = document.getElementById("edit-ticket-form");
+  if (!modal || !form) return;
+
+  state.editingTicketId = null;
+  modal.classList.remove("active");
+  modal.setAttribute("aria-hidden", "true");
+  form.reset();
+}
+
 function renderAll() {
   renderStatsCards(state.allTickets);
   renderTableRows(getVisibleTickets());
@@ -101,5 +137,69 @@ function bindFilterControls() {
   });
 }
 
+function bindEditActions() {
+  const tbody = document.getElementById("tickets-table-body");
+  const modal = document.getElementById("edit-modal");
+  const cancelButton = document.getElementById("cancel-edit");
+  const form = document.getElementById("edit-ticket-form");
+
+  if (!tbody || !modal || !cancelButton || !form) return;
+
+  tbody.addEventListener("click", (event) => {
+    const button = event.target.closest(".btn-edit");
+    if (!button) return;
+
+    openEditModal(Number(button.dataset.id));
+  });
+
+  cancelButton.addEventListener("click", () => {
+    closeEditModal();
+  });
+
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) {
+      closeEditModal();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && modal.classList.contains("active")) {
+      closeEditModal();
+    }
+  });
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    const titleInput = document.getElementById("edit-title");
+    const statusInput = document.getElementById("edit-status");
+    const priorityInput = document.getElementById("edit-priority");
+    const customerInput = document.getElementById("edit-customer");
+
+    if (!titleInput || !statusInput || !priorityInput || !customerInput) return;
+
+    const title = titleInput.value.trim();
+    const customer = customerInput.value.trim();
+
+    if (!title || !customer || state.editingTicketId === null) return;
+
+    state.allTickets = state.allTickets.map((ticket) =>
+      ticket.id === state.editingTicketId
+        ? {
+            ...ticket,
+            title,
+            status: statusInput.value,
+            priority: Number(priorityInput.value),
+            customer
+          }
+        : ticket
+    );
+
+    closeEditModal();
+    renderAll();
+  });
+}
+
 bindFilterControls();
+bindEditActions();
 renderAll();
