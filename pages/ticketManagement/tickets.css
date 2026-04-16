@@ -34,6 +34,17 @@ body {
   position: relative;
 }
 
+.logo {
+  width: 90px;
+  margin-top: -30px;
+  filter: brightness(0) invert(1)
+    drop-shadow(0 0 5px rgba(143, 179, 255, 0.5));
+}
+
+.logo path {
+  fill: white;
+}
+
 .edge-left h2 {
   font-size: 18px;
   font-weight: 700;
