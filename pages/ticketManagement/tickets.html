@@ -6,10 +6,125 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tickets</title>
     <link rel="stylesheet" href="./tickets.css">
+    <script type="module" src="./tickets.js"></script>
 </head>
 
 <body>
-    <h1>Tickets</h1>
+    <div class="page-shell">
+        <aside class="edge-panel edge-left">
+            <img src="../login-welcome/Images/nokia - Copy.svg" class="logo" alt="logo">
+            <h2>Operation Tracking</h2>
+            <p>Tickets management workspace</p>
+        </aside>
+
+        <main class="tickets-main">
+            <header class="tickets-header glass-panel">
+                <div>
+                    <h1>Tickets</h1>
+                    <p>Monitor and update operational incidents.</p>
+                </div>
+            </header>
+
+            <section class="stats-grid" id="stats-grid">
+                <article class="stat-card">
+                    <p>Total Tickets</p>
+                    <strong id="total-count">0</strong>
+                </article>
+                <article class="stat-card">
+                    <p>Open</p>
+                    <strong id="open-count">0</strong>
+                </article>
+                <article class="stat-card">
+                    <p>In Progress</p>
+                    <strong id="progress-count">0</strong>
+                </article>
+                <article class="stat-card">
+                    <p>Resolved / Closed</p>
+                    <strong id="done-count">0</strong>
+                </article>
+            </section>
+
+            <section class="filter-panel glass-panel">
+                <input id="search-input" type="text" placeholder="Search by ID, title, or customer">
+                <select id="status-filter">
+                    <option value="">All statuses</option>
+                    <option value="open">Open</option>
+                    <option value="in progress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="closed">Closed</option>
+                    <option value="canceled">Canceled</option>
+                </select>
+                <select id="priority-filter">
+                    <option value="">All priorities</option>
+                    <option value="1">Priority 1</option>
+                    <option value="2">Priority 2</option>
+                    <option value="3">Priority 3</option>
+                    <option value="4">Priority 4</option>
+                    <option value="5">Priority 5</option>
+                </select>
+            </section>
+
+            <section class="table-panel glass-panel">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Open Date</th>
+                            <th>Customer</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tickets-table-body"></tbody>
+                </table>
+            </section>
+        </main>
+
+        <aside class="edge-panel edge-right">
+            <div class="edge-pill">Live View</div>
+            <div class="edge-pill">Team Feed</div>
+        </aside>
+    </div>
+
+    <div class="modal-overlay" id="edit-modal" aria-hidden="true">
+        <div class="modal-card glass-panel" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+            <h2 id="edit-modal-title">Edit Ticket</h2>
+            <form id="edit-ticket-form">
+                <input type="hidden" id="edit-id">
+
+                <label for="edit-title">Title</label>
+                <input id="edit-title" type="text" required>
+
+                <label for="edit-status">Status</label>
+                <select id="edit-status" required>
+                    <option value="open">Open</option>
+                    <option value="in progress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="closed">Closed</option>
+                    <option value="canceled">Canceled</option>
+                </select>
+
+                <label for="edit-priority">Priority</label>
+                <select id="edit-priority" required>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
+
+                <label for="edit-customer">Customer</label>
+                <input id="edit-customer" type="text" required>
+
+                <div class="modal-actions">
+                    <button type="button" id="cancel-edit" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 
 </html>
