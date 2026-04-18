@@ -5,11 +5,149 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
+
     <link rel="stylesheet" href="./dashboard.css">
+    <script src=".\script.js" defer></script>
 </head>
 
 <body>
-    <h1>Dashboard</h1>
+    <div class="container">
+        <section class="welcome">
+            <div class="welcome-top">
+                <div>
+                    <p class="welcome-header">Good Morning, Cevher Kemal Sirin</p>
+                    <p class="welcome-sign">Nokia</p>
+                    <h1 class="welcome-title">Incident Management Console</h1>
+                    <p class="welcome-subtitle">
+                        A cleaner enterprise-style dashboard for monitoring incidents, filtering operational queues, and
+                        reviewing ticket ownership in one place.
+                    </p>
+                </div>
+
+                <div class="country-box">
+                    <div class="country-label">Country</div>
+                    <div class="country-value">Romania</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="section-top">
+                <div>
+                    <h2 class="section-title">Filters</h2>
+                    <p class="section-note">Filter the ticket list by status, priority, group, text, and date.</p>
+                </div>
+                <button class="btn btn-reset" id="resetBtn">Reset</button>
+            </div>
+
+            <div class="filters">
+                <div class="field">
+                    <label for="searchInput">Search</label>
+                    <input id="searchInput" type="text" placeholder="Search by ID or description" />
+                </div>
+
+                <div class="field">
+                    <label for="statusFilter">Status</label>
+                    <select id="statusFilter">
+                        <option value="All">All</option>
+                        <option value="Open">Open</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Resolved">Resolved</option>
+                        <option value="Closed">Closed</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="priorityFilter">Priority</label>
+                    <select id="priorityFilter">
+                        <option value="All">All</option>
+                        <option value="Critical">Critical</option>
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="groupFilter">Assigned Group</label>
+                    <select id="groupFilter">
+                        <option value="All">All</option>
+                        <option value="Messaging Support">Messaging Support</option>
+                        <option value="Network Team">Network Team</option>
+                        <option value="Desktop Support">Desktop Support</option>
+                        <option value="Field Support">Field Support</option>
+                        <option value="Application Support">Application Support</option>
+                        <option value="Service Desk">Service Desk</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="dateFilter">Submit Date</label>
+                    <input id="dateFilter" type="date" />
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="section-top">
+                <div>
+                    <h2 class="section-title">Incidents</h2>
+                    <p class="section-note">Example table for your dashboard data.</p>
+                </div>
+                <div class="section-topright">
+                    <section class="card-grid">
+                        <div class="card">
+                            <h3>Total Tickets</h3>
+                            <p id="totalTickets">0</p>
+                        </div>
+                        <div class="card">
+                            <h3>Open Tickets</h3>
+                            <p id="openTickets">0</p>
+                        </div>
+                        <div class="card">
+                            <h3>Critical Tickets</h3>
+                            <p id="criticalTickets">0</p>
+                        </div>
+                        <div class="card">
+                            <h3>Resolved / Closed</h3>
+                            <p id="resolvedTickets">0</p>
+                        </div>
+                    </section>
+
+                </div>
+                <div class="btn-container">
+                    <button class="btn btn-export">Inport</button>
+                    <button class="btn btn-export">Export</button>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Incident</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Assigned Group</th>
+                            <th>Service Type</th>
+                            <th>Submit Date</th>
+                            <th>Aging</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ticketTableBody"></tbody>
+                </table>
+            </div>
+            <div class="empty-state" id="emptyState">No tickets match the selected filters.</div>
+        </section>
+
+
+        </section>
+
+
+    </div>
+
 </body>
 
 </html>
