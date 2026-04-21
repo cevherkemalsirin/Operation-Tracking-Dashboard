@@ -138,6 +138,19 @@
   transform: scale(1.02);
 }
 
+.login-page .login-btn:disabled,
+.login-page .social:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.login-page .error-text {
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #b91c1c;
+}
+
 .login-page .divider {
   text-align: center;
   margin: 10px 0;

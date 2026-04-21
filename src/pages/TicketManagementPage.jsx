@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
 import '../styles/ticket-management.css';
 import { generateTickets } from '../utils/ticketGeneration';
+import { AUTH_ROLES, useAuth } from '../auth';
 
 export default function TicketManagementPage() {
+  const { role } = useAuth();
   const [allTickets, setAllTickets] = useState(() => generateTickets(30));
   const [filters, setFilters] = useState({ search: '', status: '', priority: '' });
   const [editingTicket, setEditingTicket] = useState(null);
@@ -28,8 +30,10 @@ export default function TicketManagementPage() {
     progress: allTickets.filter((t) => t.status === 'in progress').length,
     done: allTickets.filter((t) => t.status === 'resolved' || t.status === 'closed').length,
   }), [allTickets]);
+  const canEditTickets = role === AUTH_ROLES.ADMIN || role === AUTH_ROLES.OPERATOR;
 
   function openEditModal(ticket) {
+    if (!canEditTickets) return;
     setEditingTicket(ticket.id);
     setFormData({ title: ticket.title, status: ticket.status, priority: String(ticket.priority), customer: ticket.customer });
   }
@@ -40,6 +44,7 @@ export default function TicketManagementPage() {
 
   function handleSave(event) {
     event.preventDefault();
+    if (!canEditTickets) return;
     if (!editingTicket || !formData.title.trim() || !formData.customer.trim()) return;
     setAllTickets((current) => current.map((ticket) => ticket.id === editingTicket ? { ...ticket, title: formData.title.trim(), status: formData.status, priority: Number(formData.priority), customer: formData.customer.trim() } : ticket));
     closeEditModal();
@@ -56,6 +61,11 @@ export default function TicketManagementPage() {
 
         <main className="tickets-main">
           <header className="tickets-header glass-panel"><div><h1>Tickets</h1><p>Monitor and update operational incidents.</p></div></header>
+          {!canEditTickets && (
+            <section className="glass-panel viewer-note">
+              You are signed in as viewer. Ticket editing is restricted for this role.
+            </section>
+          )}
           <section className="stats-grid">
             <article className="stat-card"><p>Total Tickets</p><strong>{stats.total}</strong></article>
             <article className="stat-card"><p>Open</p><strong>{stats.open}</strong></article>
@@ -76,7 +86,16 @@ export default function TicketManagementPage() {
                 {visibleTickets.map((ticket) => (
                   <tr key={ticket.id}>
                     <td>{ticket.id}</td><td>{ticket.title}</td><td>{ticket.status}</td><td>{ticket.priority}</td><td>{ticket.openDate}</td><td>{ticket.customer}</td>
-                    <td><button type="button" className="btn-secondary btn-edit" onClick={() => openEditModal(ticket)}>Edit</button></td>
+                    <td>
+                      <button
+                        type="button"
+                        className="btn-secondary btn-edit"
+                        onClick={() => openEditModal(ticket)}
+                        disabled={!canEditTickets}
+                      >
+                        {canEditTickets ? 'Edit' : 'View Only'}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
