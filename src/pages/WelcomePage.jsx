@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '../auth';
 import '../styles/welcome.css';
 
 function QuickCard({ to, icon, label }) {
@@ -17,6 +18,7 @@ function QuickCard({ to, icon, label }) {
 }
 
 export default function WelcomePage() {
+  const { user, role, logout } = useAuth();
   const now = new Date();
   const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const date = now.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' });
@@ -27,7 +29,8 @@ export default function WelcomePage() {
         <div className="left">
           <img src="/assets/login-welcome/Images/nokia - Copy.svg" className="logo" alt="nokia" />
 
-          <h3>Hello, Melika!</h3>
+          <h3>Hello, {user?.name || 'User'}!</h3>
+          <p className="subtitle">Role: {role}</p>
           <p className="subtitle">"Welcome back to the Operations Dashboard"</p>
 
           <div className="menu">
@@ -41,6 +44,7 @@ export default function WelcomePage() {
               <img src="/assets/login-welcome/Images/moon.png" alt="moon" />
               <img src="/assets/login-welcome/Images/sun.svg" alt="sun" />
             </div>
+            <button type="button" className="logout-btn" onClick={logout}>Logout</button>
           </div>
         </div>
 

@@ -36,6 +36,7 @@ const ticketTitles = [
   'OAuth2 Token Refresh Issue'
 ];
 const names = ['William James', 'Alex Smith', 'Sarah Chen', 'Elena Rodriguez', 'David Kim', 'Amara Okafor', 'Marcus Thorne', 'Sofia Rossi', 'Liam Wilson', 'John Doe'];
+const ownerPool = ['admin@nokia.com', 'operator@nokia.com'];
 
 function generateDate(startStr, endStr) {
   const start = new Date(startStr);
@@ -52,6 +53,7 @@ export function createTicket(index) {
     openDate: generateDate('2026-01-01', '2026-04-13'),
     priority: getRandomInt(1, 5),
     customer: names[getRandomInt(0, names.length - 1)],
+    ownerEmail: ownerPool[getRandomInt(0, ownerPool.length - 1)],
   };
 }
 

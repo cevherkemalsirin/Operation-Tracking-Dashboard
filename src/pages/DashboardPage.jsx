@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import '../styles/dashboard.css';
+import { useAuth } from '../auth';
 
 function getStatusClass(status) {
   if (status === 'Open') return 'open';
@@ -17,6 +18,7 @@ function getPriorityClass(priority) {
 }
 
 export default function DashboardPage() {
+  const { user, role } = useAuth();
   const [tickets, setTickets] = useState([]);
   const [filters, setFilters] = useState({ search: '', status: 'All', priority: 'All', group: 'All', date: '' });
   const [error, setError] = useState('');
@@ -70,7 +72,7 @@ export default function DashboardPage() {
         <section className="welcome">
           <div className="welcome-top">
             <div>
-              <p className="welcome-header">Good Morning, Cevher Kemal Sirin</p>
+              <p className="welcome-header">Good Morning, {user?.name || 'User'} ({role})</p>
               <p className="welcome-sign">Nokia</p>
               <h1 className="welcome-title">Incident Management Console</h1>
               <p className="welcome-subtitle">A cleaner enterprise-style dashboard for monitoring incidents, filtering operational queues, and reviewing ticket ownership in one place.</p>
