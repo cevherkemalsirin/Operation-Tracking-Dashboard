@@ -7,7 +7,9 @@
     "assignedGroup": "Messaging Support",
     "serviceType": "Email",
     "submitDate": "2026-04-10",
-    "aging": 5
+    "aging": 5,
+    "Owner": "Admin User",
+    "Assigned_Person": "Operator"
   },
   {
     "id": "INC001302",
@@ -17,7 +19,9 @@
     "assignedGroup": "Network Team",
     "serviceType": "Access",
     "submitDate": "2026-04-11",
-    "aging": 4
+    "aging": 4,
+    "Owner": "Operator",
+    "Assigned_Person": "Admin User"
   },
   {
     "id": "INC001303",
@@ -27,7 +31,9 @@
     "assignedGroup": "Desktop Support",
     "serviceType": "Hardware",
     "submitDate": "2026-04-08",
-    "aging": 7
+    "aging": 7,
+    "Owner": "Viewer User",
+    "Assigned_Person": "Operator"
   },
   {
     "id": "INC001304",
@@ -37,7 +43,9 @@
     "assignedGroup": "Field Support",
     "serviceType": "Printer",
     "submitDate": "2026-04-09",
-    "aging": 6
+    "aging": 6,
+    "Owner": "Admin User",
+    "Assigned_Person": "Field Tech"
   },
   {
     "id": "INC001305",
@@ -47,7 +55,9 @@
     "assignedGroup": "Application Support",
     "serviceType": "Application",
     "submitDate": "2026-04-14",
-    "aging": 1
+    "aging": 1,
+    "Owner": "Operator",
+    "Assigned_Person": "Operator"
   },
   {
     "id": "INC001306",
@@ -57,7 +67,9 @@
     "assignedGroup": "Service Desk",
     "serviceType": "Account",
     "submitDate": "2026-04-15",
-    "aging": 0
+    "aging": 0,
+    "Owner": "Viewer User",
+    "Assigned_Person": "Service Desk Agent"
   },
   {
     "id": "INC001307",
@@ -67,7 +79,9 @@
     "assignedGroup": "Network Team",
     "serviceType": "Network",
     "submitDate": "2026-04-12",
-    "aging": 3
+    "aging": 3,
+    "Owner": "Admin User",
+    "Assigned_Person": "Operator"
   },
   {
     "id": "INC001308",
@@ -77,7 +91,9 @@
     "assignedGroup": "Service Desk",
     "serviceType": "Access",
     "submitDate": "2026-04-13",
-    "aging": 2
+    "aging": 2,
+    "Owner": "Operator",
+    "Assigned_Person": "Storage Admin"
   },
   {
     "id": "INC001309",
@@ -87,7 +103,9 @@
     "assignedGroup": "Desktop Support",
     "serviceType": "Mobile",
     "submitDate": "2026-04-07",
-    "aging": 8
+    "aging": 8,
+    "Owner": "Admin User",
+    "Assigned_Person": "Desktop Lead"
   },
   {
     "id": "INC001310",
@@ -97,6 +115,8 @@
     "assignedGroup": "Application Support",
     "serviceType": "Web Portal",
     "submitDate": "2026-04-15",
-    "aging": 0
+    "aging": 0,
+    "Owner": "Operator",
+    "Assigned_Person": "App Specialist"
   }
 ]

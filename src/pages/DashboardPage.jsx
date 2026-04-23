@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import '../styles/dashboard.css';
 import { useAuth } from '../auth';
+import { fetchTickets, getDashboardTicketsForRole } from '../utils/tickets';
 
 function getStatusClass(status) {
   if (status === 'Open') return 'open';
@@ -27,7 +28,7 @@ function getMaxCount(items) {
 }
 
 export default function DashboardPage() {
-  const { user, role } = useAuth();
+  const { role } = useAuth();
   const [tickets, setTickets] = useState([]);
   const [filters, setFilters] = useState({ search: '', status: 'All', priority: 'All', group: 'All', date: '' });
   const [error, setError] = useState('');
@@ -38,16 +39,16 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadTickets() {
       try {
-        const response = await fetch('/tickets.json');
-        if (!response.ok) throw new Error('Could not load tickets.json');
-        const data = await response.json();
-        setTickets(data);
+        setError('');
+        const data = await fetchTickets();
+        setTickets(getDashboardTicketsForRole(data, role));
       } catch (err) {
         setError('Failed to load ticket data from tickets.json.');
+        setTickets([]);
       }
     }
     loadTickets();
-  }, []);
+  }, [role]);
 
   const filteredTickets = useMemo(() => {
     return tickets.filter((ticket) => {
@@ -129,7 +130,7 @@ export default function DashboardPage() {
             <span className="status-light"></span>
             <div>
               <strong>Live Console</strong>
-              <p>{tickets.length || '--'} tickets loaded</p>
+              <p>{tickets.length} tickets loaded</p>
             </div>
           </div>
         </aside>
@@ -255,7 +256,7 @@ export default function DashboardPage() {
                 <div className="table-wrapper">
                   <table>
                     <thead>
-                      <tr><th>Incident</th><th>Description</th><th>Status</th><th>Priority</th><th>Assigned Group</th><th>Service Type</th><th>Submit Date</th><th>Aging</th></tr>
+                      <tr><th>Incident</th><th>Description</th><th>Status</th><th>Priority</th><th>Assigned Group</th><th>Owner</th><th>Assigned Person</th><th>Service Type</th><th>Submit Date</th><th>Aging</th></tr>
                     </thead>
                     <tbody>
                       {filteredTickets.map((ticket) => (
@@ -265,6 +266,8 @@ export default function DashboardPage() {
                           <td><span className={`status-badge ${getStatusClass(ticket.status)}`}>{ticket.status}</span></td>
                           <td><span className={`priority-pill ${getPriorityClass(ticket.priority)}`}><span className={`priority-dot ${getPriorityClass(ticket.priority)}`}></span>{ticket.priority}</span></td>
                           <td>{ticket.assignedGroup}</td>
+                          <td>{ticket.Owner}</td>
+                          <td>{ticket.Assigned_Person}</td>
                           <td><span className="service-chip">{ticket.serviceType}</span></td>
                           <td>{ticket.submitDate}</td>
                           <td className="aging-cell">{ticket.aging} days</td>

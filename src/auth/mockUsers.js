@@ -13,7 +13,7 @@ export const MOCK_USERS = [
     id: 'u-operator-001',
     email: 'operator@nokia.com',
     password: 'operator1234',
-    name: 'Operator User',
+    name: 'Operator',
     role: AUTH_ROLES.OPERATOR,
   },
   {
