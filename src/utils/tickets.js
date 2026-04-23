@@ -1,12 +1,57 @@
 import { AUTH_ROLES } from '../auth';
 
 export async function fetchTickets() {
-  const response = await fetch('/tickets.json', { cache: 'no-store' });
+  const response = await fetch('/api/tickets', { cache: 'no-store' });
   if (!response.ok) {
-    throw new Error('Could not load tickets.json');
+    const fallbackResponse = await fetch('/tickets.json', { cache: 'no-store' });
+    if (!fallbackResponse.ok) {
+      throw new Error('Could not load tickets.json');
+    }
+
+    return fallbackResponse.json();
   }
 
   return response.json();
+}
+
+async function parseResponse(response, errorMessage) {
+  if (!response.ok) {
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+}
+
+export async function createTicket(ticket) {
+  const response = await fetch('/api/tickets', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(ticket),
+  });
+
+  return parseResponse(response, 'Could not create ticket.');
+}
+
+export async function updateTicket(ticket) {
+  const response = await fetch(`/api/tickets/${encodeURIComponent(ticket.id)}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(ticket),
+  });
+
+  return parseResponse(response, 'Could not update ticket.');
+}
+
+export async function deleteTicket(ticketId) {
+  const response = await fetch(`/api/tickets/${encodeURIComponent(ticketId)}`, {
+    method: 'DELETE',
+  });
+
+  return parseResponse(response, 'Could not delete ticket.');
 }
 
 function normalizeValue(value) {
@@ -56,4 +101,3 @@ export function getTicketManagementTicketsForRole(tickets, role, user) {
   }
   return [];
 }
-
