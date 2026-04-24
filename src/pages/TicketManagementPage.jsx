@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import '../styles/ticket-management.css';
 import { AUTH_ROLES, useAuth } from '../auth';
-import { MOCK_USERS } from '../auth/mockUsers';
 import { createTicket, deleteTicket, fetchTickets, updateTicket } from '../utils/tickets';
+import { fetchUsers } from '../utils/users';
 
 function normalizeValue(value) {
   return String(value || '').trim().toLowerCase();
@@ -70,13 +70,14 @@ function buildDefaultForm() {
     priority: 'Medium',
     assignedGroup: 'Service Desk',
     serviceType: 'Application',
-    Assigned_Person: '',
+    assignedPersonUserId: '',
   };
 }
 
 export default function TicketManagementPage() {
   const { role, user, logout } = useAuth();
   const [allTickets, setAllTickets] = useState([]);
+  const [users, setUsers] = useState([]);
   const [activeTab, setActiveTab] = useState('my');
   const [filters, setFilters] = useState({ search: '', status: '', priority: '' });
   const [modalMode, setModalMode] = useState(null);
@@ -87,25 +88,32 @@ export default function TicketManagementPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    async function loadTickets() {
+    async function loadData() {
       try {
         setError('');
-        const data = await fetchTickets();
-        setAllTickets(data);
+        const [ticketData, userData] = await Promise.all([fetchTickets(), fetchUsers()]);
+        setAllTickets(ticketData);
+        setUsers(userData);
       } catch (err) {
-        setError('Failed to load ticket data from tickets.json.');
+        setError('Failed to load ticket data from the backend API.');
         setAllTickets([]);
+        setUsers([]);
       }
     }
 
-    loadTickets();
+    loadData();
   }, []);
 
   const canUseManagement = role !== AUTH_ROLES.VIEWER;
   const canCreateTicket = canUseManagement && activeTab === 'my';
   const canEditMyTickets = canUseManagement && activeTab === 'my';
   const canUpdateAssignedTickets = canUseManagement && activeTab === 'assigned';
-  const assignableUsers = useMemo(() => MOCK_USERS.map((mockUser) => mockUser.name), []);
+  const assignableUsers = useMemo(() => {
+    return users.map((availableUser) => ({
+      id: String(availableUser.id),
+      name: availableUser.name,
+    }));
+  }, [users]);
 
   const myTickets = useMemo(() => {
     if (!canUseManagement) return [];
@@ -151,7 +159,7 @@ export default function TicketManagementPage() {
       priority: ticket.priority,
       assignedGroup: ticket.assignedGroup,
       serviceType: ticket.serviceType,
-      Assigned_Person: ticket.Assigned_Person,
+      assignedPersonUserId: ticket.assignedPersonUserId ? String(ticket.assignedPersonUserId) : '',
     });
     setModalMode('edit');
   }
@@ -164,7 +172,7 @@ export default function TicketManagementPage() {
       priority: ticket.priority,
       assignedGroup: ticket.assignedGroup,
       serviceType: ticket.serviceType,
-      Assigned_Person: ticket.Assigned_Person,
+      assignedPersonUserId: ticket.assignedPersonUserId ? String(ticket.assignedPersonUserId) : '',
     });
     setModalMode('update');
   }
@@ -217,8 +225,7 @@ export default function TicketManagementPage() {
           serviceType: formData.serviceType.trim(),
           submitDate,
           aging: calculateAging(submitDate),
-          Owner: user?.name || 'Unknown User',
-          Assigned_Person: formData.Assigned_Person.trim(),
+          assignedPersonUserId: formData.assignedPersonUserId ? Number(formData.assignedPersonUserId) : null,
         };
 
         const updatedTickets = await createTicket(newTicket);
@@ -233,9 +240,8 @@ export default function TicketManagementPage() {
           priority: formData.priority,
           assignedGroup: formData.assignedGroup.trim(),
           serviceType: formData.serviceType.trim(),
-          Assigned_Person: formData.Assigned_Person.trim(),
+          assignedPersonUserId: formData.assignedPersonUserId ? Number(formData.assignedPersonUserId) : null,
           aging: calculateAging(selectedTicket.submitDate),
-          Owner: selectedTicket.Owner,
         };
 
         const updatedTickets = await updateTicket(updatedTicket);
@@ -416,10 +422,10 @@ export default function TicketManagementPage() {
                 <input id="ticket-service" type="text" required value={formData.serviceType} onChange={(e) => setFormData((current) => ({ ...current, serviceType: e.target.value }))} />
 
                 <label htmlFor="ticket-assigned">Assigned User</label>
-                <select id="ticket-assigned" required value={formData.Assigned_Person} onChange={(e) => setFormData((current) => ({ ...current, Assigned_Person: e.target.value }))}>
+                <select id="ticket-assigned" required value={formData.assignedPersonUserId} onChange={(e) => setFormData((current) => ({ ...current, assignedPersonUserId: e.target.value }))}>
                   <option value="">Select user</option>
                   {assignableUsers.map((assignableUser) => (
-                    <option key={assignableUser} value={assignableUser}>{assignableUser}</option>
+                    <option key={assignableUser.id} value={assignableUser.id}>{assignableUser.name}</option>
                   ))}
                 </select>
               </>
@@ -455,7 +461,7 @@ export default function TicketManagementPage() {
         <div className="modal-card delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
           <h2 id="delete-modal-title">Delete Ticket</h2>
           <p className="delete-warning">
-            Are you sure you want to delete `{deleteTarget?.id}`? This will remove the ticket from `tickets.json`.
+            Are you sure you want to delete `{deleteTarget?.id}`? This will remove the ticket from the database.
           </p>
           <div className="modal-actions">
             <button type="button" className="secondary-button" onClick={closeDeleteModal}>Cancel</button>

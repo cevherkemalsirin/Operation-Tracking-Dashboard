@@ -6,7 +6,9 @@ import '../styles/login.css';
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, signup } = useAuth();
+  const [mode, setMode] = useState('login');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -16,14 +18,22 @@ export default function LoginPage() {
   async function handleSubmit(event) {
     event.preventDefault();
     setError('');
-    if (!email.trim() || password.trim().length < 4) {
-      setError('Please enter a valid email and password.');
+    if (!email.trim() || password.trim().length < 6) {
+      setError('Please enter a valid email and a password with at least 6 characters.');
+      return;
+    }
+    if (mode === 'signup' && !name.trim()) {
+      setError('Please enter your name.');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await login({ email, password, rememberMe });
+      if (mode === 'signup') {
+        await signup({ name, email, password, rememberMe });
+      } else {
+        await login({ email, password, rememberMe });
+      }
       const redirectTarget = location.state?.from?.pathname || '/welcome';
       navigate(redirectTarget, { replace: true });
     } catch (err) {
@@ -39,13 +49,21 @@ export default function LoginPage() {
         <img src="/assets/login-welcome/Images/nokia.svg" className="logo" alt="nokia" />
         <div className="login-card">
           <div className="tabs">
-            <button className="tab active" type="button">Sign In</button>
-            <button className="tab" type="button">Sign Up</button>
-            <div className="indicator"></div>
+            <button className={`tab ${mode === 'login' ? 'active' : ''}`} type="button" onClick={() => setMode('login')}>Sign In</button>
+            <button className={`tab ${mode === 'signup' ? 'active' : ''}`} type="button" onClick={() => setMode('signup')}>Sign Up</button>
           </div>
 
-          <h2>Welcome Back</h2>
+          <h2>{mode === 'login' ? 'Welcome Back' : 'Create Account'}</h2>
           <form onSubmit={handleSubmit}>
+            {mode === 'signup' && (
+              <input
+                type="text"
+                placeholder="Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            )}
             <input
               type="email"
               placeholder="Email"
@@ -59,7 +77,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={4}
+              minLength={6}
             />
 
             <div className="options">
@@ -74,14 +92,11 @@ export default function LoginPage() {
               <a href="#">Forgot password?</a>
             </div>
             <button type="submit" className="login-btn" disabled={isSubmitting}>
-              {isSubmitting ? 'Signing in...' : 'Login'}
+              {isSubmitting ? (mode === 'login' ? 'Signing in...' : 'Creating account...') : (mode === 'login' ? 'Login' : 'Sign Up')}
             </button>
             {error && <p className="error-text" role="alert">{error}</p>}
           </form>
-          <p className="divider">OR</p>
-
-          <button className="social apple" type="button" disabled={isSubmitting}><img src="/assets/login-welcome/Images/apple.svg" alt="apple" /></button>
-          <button className="social google" type="button" disabled={isSubmitting}><img src="/assets/login-welcome/Images/search.png" alt="google" /></button>
+          <p className="divider">{mode === 'signup' ? 'New accounts are created as viewer by default.' : 'Use one of the seeded demo accounts or sign up.'}</p>
         </div>
       </div>
     </div>

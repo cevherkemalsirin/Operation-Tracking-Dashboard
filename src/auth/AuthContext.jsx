@@ -29,6 +29,12 @@ export function AuthProvider({ children }) {
     return session.user;
   }
 
+  async function signup(payload) {
+    const session = await authService.signup(payload);
+    setUser(session.user);
+    return session.user;
+  }
+
   async function logout() {
     await authService.logout();
     setUser(null);
@@ -41,6 +47,7 @@ export function AuthProvider({ children }) {
       isAuthenticated: Boolean(user),
       isBootstrapping,
       login,
+      signup,
       logout,
     }),
     [user, isBootstrapping]

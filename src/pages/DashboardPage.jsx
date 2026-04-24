@@ -43,7 +43,7 @@ export default function DashboardPage() {
         const data = await fetchTickets();
         setTickets(getDashboardTicketsForRole(data, role));
       } catch (err) {
-        setError('Failed to load ticket data from tickets.json.');
+        setError('Failed to load ticket data from the backend API.');
         setTickets([]);
       }
     }

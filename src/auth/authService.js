@@ -1,36 +1,43 @@
-import { MOCK_USERS } from './mockUsers';
+import { apiRequest } from '../utils/api';
 import { clearStoredSession, loadStoredSession, saveStoredSession } from './sessionStorage';
 
-function mapToSessionUser(user) {
-  return {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-  };
-}
-
-// This service boundary is intentionally small so it can be swapped for API calls later.
 export const authService = {
   async login({ email, password, rememberMe }) {
-    const normalizedEmail = email.trim().toLowerCase();
-    const user = MOCK_USERS.find(
-      (candidate) =>
-        candidate.email.toLowerCase() === normalizedEmail &&
-        candidate.password === password
-    );
+    const session = await apiRequest('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    });
 
-    if (!user) {
-      throw new Error('Invalid email or password.');
-    }
-
-    const session = {
-      user: mapToSessionUser(user),
+    saveStoredSession({
+      token: session.token,
+      user: session.user,
       rememberMe: Boolean(rememberMe),
       createdAt: Date.now(),
-    };
+    });
 
-    saveStoredSession(session);
+    return session;
+  },
+
+  async signup({ name, email, password, rememberMe }) {
+    const session = await apiRequest('/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+      }),
+    });
+
+    saveStoredSession({
+      token: session.token,
+      user: session.user,
+      rememberMe: Boolean(rememberMe),
+      createdAt: Date.now(),
+    });
+
     return session;
   },
 
@@ -39,6 +46,20 @@ export const authService = {
   },
 
   async getSession() {
-    return loadStoredSession();
+    const storedSession = loadStoredSession();
+    if (!storedSession?.token) return null;
+
+    try {
+      const response = await apiRequest('/auth/me');
+      const session = {
+        ...storedSession,
+        user: response.user,
+      };
+      saveStoredSession(session);
+      return session;
+    } catch (error) {
+      clearStoredSession();
+      return null;
+    }
   },
 };
