@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import '../styles/dashboard.css';
 import { useAuth } from '../auth';
 import { fetchTickets, getDashboardTicketsForRole } from '../utils/tickets';
+import { StackedBarTrendChart, SLAPerformanceChart } from '../components/Charts';
 
 function getStatusClass(status) {
   if (status === 'Open') return 'open';
@@ -19,12 +20,15 @@ function getPriorityClass(priority) {
   return 'dot-low';
 }
 
-function getPriorityTone(priority) {
-  return `priority-${priority.toLowerCase()}`;
-}
-
-function getMaxCount(items) {
-  return Math.max(...items.map((item) => item.count), 1);
+function getWeekKey(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(`${dateStr}T12:00:00`);
+  if (isNaN(d.getTime())) return null;
+  const dow = d.getDay() || 7;
+  d.setDate(d.getDate() + 4 - dow);
+  const jan1 = new Date(d.getFullYear(), 0, 1);
+  const weekNum = Math.ceil(((d - jan1) / 86400000 + 1) / 7);
+  return `W${weekNum}\n${d.getFullYear()}`;
 }
 
 export default function DashboardPage() {
@@ -34,7 +38,6 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [graphOpen, setGraphOpen] = useState(false);
-  const [activeGraph, setActiveGraph] = useState('service');
 
   useEffect(() => {
     async function loadTickets() {
@@ -64,42 +67,24 @@ export default function DashboardPage() {
     });
   }, [tickets, filters]);
 
-  const priorityStats = useMemo(() => {
-    const priorities = ['Critical', 'High', 'Medium', 'Low'];
-    const counts = priorities.map((priority) => ({
-      priority,
-      count: filteredTickets.filter((ticket) => ticket.priority === priority).length,
-    }));
-    const max = Math.max(...counts.map((item) => item.count), 1);
-
-    return counts.map((item) => ({
-      ...item,
-      percentage: Math.round((item.count / max) * 100),
-    }));
-  }, [filteredTickets]);
-
-  const serviceStats = useMemo(() => {
-    const counts = filteredTickets.reduce((current, ticket) => {
-      current[ticket.serviceType] = (current[ticket.serviceType] || 0) + 1;
-      return current;
-    }, {});
-    const items = Object.entries(counts).map(([service, count]) => ({ service, count }));
-    const max = getMaxCount(items);
-
-    return items
-      .sort((a, b) => b.count - a.count)
-      .map((item) => ({ ...item, percentage: Math.round((item.count / max) * 100) }));
-  }, [filteredTickets]);
-
-  const statusStats = useMemo(() => {
-    const statuses = ['Open', 'In Progress', 'Pending', 'Resolved', 'Closed'];
-    const items = statuses.map((status) => ({
-      status,
-      count: filteredTickets.filter((ticket) => ticket.status === status).length,
-    }));
-    const max = getMaxCount(items);
-
-    return items.map((item) => ({ ...item, percentage: Math.round((item.count / max) * 100) }));
+  const weeklyData = useMemo(() => {
+    const weeks = {};
+    filteredTickets.forEach((t) => {
+      const key = getWeekKey(t.submitDate);
+      if (!key) return;
+      if (!weeks[key]) {
+        weeks[key] = {
+          label: key,
+          total: 0,
+          values: { Critical: 0, High: 0, Medium: 0, Low: 0 },
+          statusValues: { Open: 0, 'In Progress': 0, Pending: 0, Resolved: 0, Closed: 0 },
+        };
+      }
+      weeks[key].total++;
+      if (weeks[key].values[t.priority] !== undefined) weeks[key].values[t.priority]++;
+      if (weeks[key].statusValues[t.status] !== undefined) weeks[key].statusValues[t.status]++;
+    });
+    return Object.values(weeks).sort((a, b) => a.label.localeCompare(b.label));
   }, [filteredTickets]);
 
   function updateFilter(name, value) {
@@ -193,63 +178,16 @@ export default function DashboardPage() {
 
             {graphOpen ? (
               <div className="graph-stage" aria-label="Graphs">
-                <div className="graph-heading">
-                  <div>
-                    <h3>Graphs</h3>
-                    <p>Different views of the current queue.</p>
-                  </div>
-                  <div className="graph-tabs" aria-label="Graph type">
-                    <button className={`graph-tab ${activeGraph === 'service' ? 'active' : ''}`} type="button" onClick={() => setActiveGraph('service')}>Service Type</button>
-                    <button className={`graph-tab ${activeGraph === 'status' ? 'active' : ''}`} type="button" onClick={() => setActiveGraph('status')}>Status</button>
-                    <button className={`graph-tab ${activeGraph === 'priority' ? 'active' : ''}`} type="button" onClick={() => setActiveGraph('priority')}>Priority</button>
-                  </div>
+                <div className="nk-graph-section">
+                  <h3 className="nk-graph-title">Incident KPIs &amp; Trends</h3>
+                  <p className="nk-graph-note">Weekly ticket volume by priority with overall trend line.</p>
+                  <StackedBarTrendChart groups={weeklyData} />
                 </div>
-
-                {activeGraph === 'service' && (
-                  <div className="service-chart">
-                    {serviceStats.map((item) => (
-                      <div className="service-column" key={item.service}>
-                        <div className="service-bar-wrap">
-                          <div className="service-bar" style={{ height: `${item.percentage}%` }}>
-                            <strong>{item.count}</strong>
-                          </div>
-                        </div>
-                        <span>{item.service}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {activeGraph === 'status' && (
-                  <div className="status-chart">
-                    {statusStats.map((item, index) => (
-                      <div className={`status-lane ${getStatusClass(item.status)}`} key={item.status}>
-                        <span className="status-index">{String(index + 1).padStart(2, '0')}</span>
-                        <div className="status-line">
-                          <span style={{ width: `${item.percentage}%` }}></span>
-                        </div>
-                        <strong>{item.status}</strong>
-                        <em>{item.count}</em>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {activeGraph === 'priority' && (
-                  <div className="priority-chart">
-                    {priorityStats.map((item) => (
-                      <div className={`chart-row ${getPriorityTone(item.priority)}`} key={item.priority}>
-                        <div className="chart-label">
-                          <span>{item.priority}</span>
-                          <strong>{item.count}</strong>
-                        </div>
-                        <div className="chart-track">
-                          <div className="chart-fill" style={{ width: `${item.percentage}%` }}></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div className="nk-graph-section">
+                  <h3 className="nk-graph-title">Incident SLA Performance</h3>
+                  <p className="nk-graph-note">Resolution rate per week — within SLA vs. out of SLA.</p>
+                  <SLAPerformanceChart groups={weeklyData} />
+                </div>
               </div>
             ) : (
               <>
