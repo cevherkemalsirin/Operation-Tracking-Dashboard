@@ -13,6 +13,7 @@ const ticketSelect = `
     TO_CHAR(t.submit_date, 'YYYY-MM-DD') AS submit_date,
     TO_CHAR(t.last_modified_date, 'YYYY-MM-DD') AS last_modified_date,
     TO_CHAR(t.close_date, 'YYYY-MM-DD') AS close_date,
+    t.updated_at,
     t.company,
     t.product_categorization_tier1,
     t.product_categorization_tier2,

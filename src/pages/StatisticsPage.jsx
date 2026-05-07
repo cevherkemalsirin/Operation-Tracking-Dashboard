@@ -44,9 +44,14 @@ function getTicketSlaState(ticket) {
   }
 
   if (isCompleted) {
-    if (!ticket.closeDate) return 'within';
-    const closeDateEnd = new Date(`${ticket.closeDate}T23:59:59`);
-    return closeDateEnd <= deadline ? 'within' : 'missed';
+    const completionDate = ticket.updatedAt
+      ? new Date(ticket.updatedAt)
+      : ticket.closeDate
+        ? new Date(`${ticket.closeDate}T23:59:59`)
+        : null;
+
+    if (!completionDate || Number.isNaN(completionDate.getTime())) return 'within';
+    return completionDate <= deadline ? 'within' : 'missed';
   }
 
   return Date.now() > deadline.getTime() ? 'overdue' : 'active';

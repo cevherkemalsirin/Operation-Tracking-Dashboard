@@ -13,6 +13,7 @@ export function mapTicketRow(row) {
     submitDate: row.submit_date,
     lastModifiedDate: row.last_modified_date || '',
     closeDate: row.close_date || '',
+    updatedAt: row.updated_at || '',
     company: row.company || '',
     productCategorizationTier1: row.product_categorization_tier1 || '',
     productCategorizationTier2: row.product_categorization_tier2 || '',
