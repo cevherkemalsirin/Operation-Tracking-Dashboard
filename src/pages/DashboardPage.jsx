@@ -20,6 +20,14 @@ function getPriorityClass(priority) {
   return 'dot-low';
 }
 
+function getTicketRowClass(ticket) {
+  if (ticket.status === 'Closed' || ticket.status === 'Resolved') {
+    return 'ticket-row-completed';
+  }
+
+  return `sla-row sla-row-${ticket.slaUrgency || 'none'}`;
+}
+
 function getWeekKey(dateStr) {
   if (!dateStr) return null;
   const d = new Date(`${dateStr}T12:00:00`);
@@ -208,6 +216,7 @@ export default function DashboardPage() {
                       <tr>
                         <th>Incident</th>
                         <th>Description</th>
+                        <th>SLA Remaining</th>
                         <th>Status</th>
                         <th>Priority</th>
                         <th>Assigned Group</th>
@@ -222,15 +231,15 @@ export default function DashboardPage() {
                         <th>Submit Date</th>
                         <th>Last Modified Date</th>
                         <th>Close Date</th>
-                        <th>SLA Remaining</th>
                         <th>Aging</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredTickets.map((ticket) => (
-                        <tr key={ticket.id}>
+                        <tr className={getTicketRowClass(ticket)} key={ticket.id}>
                           <td className="ticket-id">{ticket.id}</td>
                           <td className="description-cell">{ticket.description}</td>
+                          <td><span className={`sla-badge sla-${ticket.slaUrgency || 'none'}`}>{displayValue(ticket.slaRemainingLabel)}</span></td>
                           <td><span className={`status-badge ${getStatusClass(ticket.status)}`}>{ticket.status}</span></td>
                           <td><span className={`priority-pill ${getPriorityClass(ticket.priority)}`}><span className={`priority-dot ${getPriorityClass(ticket.priority)}`}></span>{ticket.priority}</span></td>
                           <td>{ticket.assignedGroup}</td>
@@ -245,7 +254,6 @@ export default function DashboardPage() {
                           <td>{formatDate(ticket.submitDate)}</td>
                           <td>{formatDate(ticket.lastModifiedDate)}</td>
                           <td>{formatDate(ticket.closeDate)}</td>
-                          <td><span className={`sla-badge sla-${ticket.slaUrgency || 'none'}`}>{displayValue(ticket.slaRemainingLabel)}</span></td>
                           <td className="aging-cell">{ticket.aging} days</td>
                         </tr>
                       ))}
