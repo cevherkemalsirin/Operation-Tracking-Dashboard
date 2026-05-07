@@ -21,6 +21,7 @@ const ticketSelect = `
     t.sla_type,
     t.sla_hours,
     t.sla_deadline,
+    t.created_at,
     t.aging,
     t.owner_user_id,
     owner_user.name AS owner_name,
@@ -43,6 +44,10 @@ async function findTicketRow(ticketId) {
 
 function operatorCanAccessTicket(ticket, userId) {
   return ticket.owner_user_id === userId || ticket.assigned_person_user_id === userId;
+}
+
+function operatorCanFullyEditTicket(ticket, userId) {
+  return ticket.owner_user_id === userId;
 }
 
 function getTodayDate() {
@@ -95,7 +100,7 @@ export async function createTicket(req, res) {
   const defaultSla = getDefaultSlaForPriority(priority);
   const slaTypeValue = slaType || defaultSla.slaType;
   const slaHoursValue = Number(slaHours || defaultSla.slaHours);
-  const slaDeadline = calculateSlaDeadline(submitDate, slaTypeValue, slaHoursValue);
+  const slaDeadline = calculateSlaDeadline(new Date(), slaTypeValue, slaHoursValue);
 
   const result = await query(
     `INSERT INTO tickets (
@@ -160,7 +165,7 @@ export async function updateTicket(req, res) {
     return res.status(403).json({ message: 'Operators can only update their own or assigned tickets.' });
   }
 
-  if (req.user.role === 'operator') {
+  if (req.user.role === 'operator' && !operatorCanFullyEditTicket(currentTicket, req.user.id)) {
     const nextStatus = req.body.status || currentTicket.status;
     const closeDateValue = getCloseDateForStatus(
       nextStatus,
@@ -189,8 +194,8 @@ export async function updateTicket(req, res) {
   const defaultSla = getDefaultSlaForPriority(nextPriority);
   const slaTypeValue = req.body.slaType || currentTicket.sla_type || defaultSla.slaType;
   const slaHoursValue = Number(req.body.slaHours || currentTicket.sla_hours || defaultSla.slaHours);
-  const submitDateValue = req.body.submitDate || currentTicket.submit_date;
-  const slaDeadline = calculateSlaDeadline(submitDateValue, slaTypeValue, slaHoursValue);
+  const slaStartValue = currentTicket.created_at || req.body.submitDate || currentTicket.submit_date;
+  const slaDeadline = calculateSlaDeadline(slaStartValue, slaTypeValue, slaHoursValue);
   const closeDateValue = getCloseDateForStatus(
     nextStatus,
     currentTicket.status,
