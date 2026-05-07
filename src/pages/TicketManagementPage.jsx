@@ -332,6 +332,8 @@ function openDeleteModal(ticket) {
           <nav className="sidebar-links" aria-label="Primary navigation">
             <NavLink to="/" end>Home</NavLink>
             <NavLink to="/dashboard">Dashboard</NavLink>
+            <NavLink to="/tickets">Ticket Management</NavLink>
+            <NavLink to="/statistics">Statistics</NavLink>
           </nav>
 
           <div className="sidebar-divider"></div>
