@@ -3,7 +3,6 @@ import { NavLink } from 'react-router-dom';
 import '../styles/dashboard.css';
 import { useAuth } from '../auth';
 import { fetchTickets, getDashboardTicketsForRole } from '../utils/tickets';
-import { StackedBarTrendChart, SLAPerformanceChart } from '../components/Charts';
 
 function getStatusClass(status) {
   if (status === 'Open') return 'open';
@@ -28,17 +27,6 @@ function getTicketRowClass(ticket) {
   return `sla-row sla-row-${ticket.slaUrgency || 'none'}`;
 }
 
-function getWeekKey(dateStr) {
-  if (!dateStr) return null;
-  const d = new Date(`${dateStr}T12:00:00`);
-  if (isNaN(d.getTime())) return null;
-  const dow = d.getDay() || 7;
-  d.setDate(d.getDate() + 4 - dow);
-  const jan1 = new Date(d.getFullYear(), 0, 1);
-  const weekNum = Math.ceil(((d - jan1) / 86400000 + 1) / 7);
-  return `W${weekNum}\n${d.getFullYear()}`;
-}
-
 function displayValue(value) {
   return value || '-';
 }
@@ -56,7 +44,6 @@ export default function DashboardPage() {
   const [filters, setFilters] = useState({ search: '', status: 'All', priority: 'All', group: 'All', date: '' });
   const [error, setError] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [graphOpen, setGraphOpen] = useState(false);
 
   useEffect(() => {
     async function loadTickets() {
@@ -85,26 +72,6 @@ export default function DashboardPage() {
       return matchesSearch && matchesStatus && matchesPriority && matchesGroup && matchesDate;
     });
   }, [tickets, filters]);
-
-  const weeklyData = useMemo(() => {
-    const weeks = {};
-    filteredTickets.forEach((t) => {
-      const key = getWeekKey(t.submitDate);
-      if (!key) return;
-      if (!weeks[key]) {
-        weeks[key] = {
-          label: key,
-          total: 0,
-          values: { Critical: 0, High: 0, Medium: 0, Low: 0 },
-          statusValues: { Open: 0, 'In Progress': 0, Pending: 0, Resolved: 0, Closed: 0 },
-        };
-      }
-      weeks[key].total++;
-      if (weeks[key].values[t.priority] !== undefined) weeks[key].values[t.priority]++;
-      if (weeks[key].statusValues[t.status] !== undefined) weeks[key].statusValues[t.status]++;
-    });
-    return Object.values(weeks).sort((a, b) => a.label.localeCompare(b.label));
-  }, [filteredTickets]);
 
   function updateFilter(name, value) {
     setFilters((current) => ({ ...current, [name]: value }));
@@ -182,88 +149,66 @@ export default function DashboardPage() {
                   <button className="btn btn-toggle" type="button" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((current) => !current)}>
                     Filters
                   </button>
-                  <button className="btn btn-toggle" type="button" aria-expanded={graphOpen} onClick={() => setGraphOpen((current) => !current)}>
-                    Graphs
-                  </button>
                 </div>
               </div>
-              {!graphOpen && (
-                <label className="toolbar-search" htmlFor="toolbarSearch">
-                  <span>Search</span>
-                  <input id="toolbarSearch" type="text" placeholder="Search by ID or description" value={filters.search} onChange={(e)=>updateFilter('search', e.target.value)} />
-                </label>
-              )}
+              <label className="toolbar-search" htmlFor="toolbarSearch">
+                <span>Search</span>
+                <input id="toolbarSearch" type="text" placeholder="Search by ID or description" value={filters.search} onChange={(e)=>updateFilter('search', e.target.value)} />
+              </label>
               <div className="btn-container"><button className="btn btn-export" type="button">Import</button><button className="btn btn-export" type="button">Export</button></div>
             </div>
 
-            {graphOpen ? (
-              <div className="graph-stage" aria-label="Graphs">
-                <div className="nk-graph-section">
-                  <h3 className="nk-graph-title">Incident KPIs &amp; Trends</h3>
-                  <p className="nk-graph-note">Weekly ticket volume by priority with overall trend line.</p>
-                  <StackedBarTrendChart groups={weeklyData} />
-                </div>
-                <div className="nk-graph-section">
-                  <h3 className="nk-graph-title">Incident SLA Performance</h3>
-                  <p className="nk-graph-note">Resolution rate per week — within SLA vs. out of SLA.</p>
-                  <SLAPerformanceChart groups={weeklyData} />
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="table-wrapper">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Incident</th>
-                        <th>Description</th>
-                        <th>SLA Remaining</th>
-                        <th>Status</th>
-                        <th>Priority</th>
-                        <th>Assigned Group</th>
-                        <th>Owner</th>
-                        <th>Assigned Person</th>
-                        <th>Company</th>
-                        <th>Product Categorization Tier 1</th>
-                        <th>Product Categorization Tier 2</th>
-                        <th>Product Categorization Tier 3</th>
-                        <th>Categorization Tier 1</th>
-                        <th>Service Type</th>
-                        <th>Submit Date</th>
-                        <th>Last Modified Date</th>
-                        <th>Close Date</th>
-                        <th>Aging</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredTickets.map((ticket) => (
-                        <tr className={getTicketRowClass(ticket)} key={ticket.id}>
-                          <td className="ticket-id">{ticket.id}</td>
-                          <td className="description-cell">{ticket.description}</td>
-                          <td><span className={`sla-badge sla-${ticket.slaUrgency || 'none'}`}>{displayValue(ticket.slaRemainingLabel)}</span></td>
-                          <td><span className={`status-badge ${getStatusClass(ticket.status)}`}>{ticket.status}</span></td>
-                          <td><span className={`priority-pill ${getPriorityClass(ticket.priority)}`}><span className={`priority-dot ${getPriorityClass(ticket.priority)}`}></span>{ticket.priority}</span></td>
-                          <td>{ticket.assignedGroup}</td>
-                          <td>{ticket.Owner}</td>
-                          <td>{ticket.Assigned_Person}</td>
-                          <td>{displayValue(ticket.company)}</td>
-                          <td>{displayValue(ticket.productCategorizationTier1)}</td>
-                          <td>{displayValue(ticket.productCategorizationTier2)}</td>
-                          <td>{displayValue(ticket.productCategorizationTier3)}</td>
-                          <td>{displayValue(ticket.categorizationTier1)}</td>
-                          <td><span className="service-chip">{ticket.serviceType}</span></td>
-                          <td>{formatDate(ticket.submitDate)}</td>
-                          <td>{formatDate(ticket.lastModifiedDate)}</td>
-                          <td>{formatDate(ticket.closeDate)}</td>
-                          <td className="aging-cell">{ticket.aging} days</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {(error || filteredTickets.length === 0) && <div className="empty-state">{error || 'No tickets match the selected filters.'}</div>}
-              </>
-            )}
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Incident</th>
+                    <th>Description</th>
+                    <th>SLA Remaining</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Assigned Group</th>
+                    <th>Owner</th>
+                    <th>Assigned Person</th>
+                    <th>Company</th>
+                    <th>Product Categorization Tier 1</th>
+                    <th>Product Categorization Tier 2</th>
+                    <th>Product Categorization Tier 3</th>
+                    <th>Categorization Tier 1</th>
+                    <th>Service Type</th>
+                    <th>Submit Date</th>
+                    <th>Last Modified Date</th>
+                    <th>Close Date</th>
+                    <th>Aging</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTickets.map((ticket) => (
+                    <tr className={getTicketRowClass(ticket)} key={ticket.id}>
+                      <td className="ticket-id">{ticket.id}</td>
+                      <td className="description-cell">{ticket.description}</td>
+                      <td><span className={`sla-badge sla-${ticket.slaUrgency || 'none'}`}>{displayValue(ticket.slaRemainingLabel)}</span></td>
+                      <td><span className={`status-badge ${getStatusClass(ticket.status)}`}>{ticket.status}</span></td>
+                      <td><span className={`priority-pill ${getPriorityClass(ticket.priority)}`}><span className={`priority-dot ${getPriorityClass(ticket.priority)}`}></span>{ticket.priority}</span></td>
+                      <td>{ticket.assignedGroup}</td>
+                      <td>{ticket.Owner}</td>
+                      <td>{ticket.Assigned_Person}</td>
+                      <td>{displayValue(ticket.company)}</td>
+                      <td>{displayValue(ticket.productCategorizationTier1)}</td>
+                      <td>{displayValue(ticket.productCategorizationTier2)}</td>
+                      <td>{displayValue(ticket.productCategorizationTier3)}</td>
+                      <td>{displayValue(ticket.categorizationTier1)}</td>
+                      <td><span className="service-chip">{ticket.serviceType}</span></td>
+                      <td>{formatDate(ticket.submitDate)}</td>
+                      <td>{formatDate(ticket.lastModifiedDate)}</td>
+                      <td>{formatDate(ticket.closeDate)}</td>
+                      <td className="aging-cell">{ticket.aging} days</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {(error || filteredTickets.length === 0) && <div className="empty-state">{error || 'No tickets match the selected filters.'}</div>}
           </section>
         </main>
       </div>
