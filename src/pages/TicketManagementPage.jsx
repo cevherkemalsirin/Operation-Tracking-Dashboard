@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import '../styles/ticket-management.css';
 import { AUTH_ROLES, useAuth } from '../auth';
 import { createTicket, deleteTicket, fetchTickets, updateTicket } from '../utils/tickets';
@@ -43,6 +43,17 @@ function getStatusClass(status) {
   return 'pending';
 }
 
+function getTicketCardClass(ticket) {
+  if (ticket.status === 'Resolved' || ticket.status === 'Closed') {
+    return 'ticket-card completed';
+  }
+
+  if (ticket.slaUrgency === 'warning') return 'ticket-card sla-warning';
+  if (ticket.slaUrgency === 'danger') return 'ticket-card sla-danger';
+  if (ticket.slaUrgency === 'overdue') return 'ticket-card sla-overdue';
+  return 'ticket-card';
+}
+
 function getNextTicketId(tickets) {
   const nextNumber = tickets.reduce((current, ticket) => {
     const numericId = Number.parseInt(String(ticket.id).replace(/\D/g, ''), 10);
@@ -56,6 +67,20 @@ function getTodayDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function getDefaultSlaForPriority(priority) {
+  if (priority === 'Critical') return { slaType: 'normal', slaHours: 4 };
+  if (priority === 'High') return { slaType: 'normal', slaHours: 8 };
+  if (priority === 'Medium') return { slaType: 'business', slaHours: 24 };
+  return { slaType: 'business', slaHours: 72 };
+}
+
+function formatDate(value) {
+  if (!value) return '-';
+  const [year, month, day] = String(value).slice(0, 10).split('-');
+  if (!year || !month || !day) return value;
+  return `${day}/${month}/${year}`;
+}
+
 function calculateAging(submitDate) {
   const submitted = new Date(submitDate);
   if (Number.isNaN(submitted.getTime())) return 0;
@@ -64,12 +89,21 @@ function calculateAging(submitDate) {
 }
 
 function buildDefaultForm() {
+  const defaultSla = getDefaultSlaForPriority('Medium');
+
   return {
     description: '',
     status: 'Open',
     priority: 'Medium',
     assignedGroup: 'Service Desk',
     serviceType: 'Application',
+    slaType: defaultSla.slaType,
+    slaHours: String(defaultSla.slaHours),
+    company: '',
+    productCategorizationTier1: '',
+    productCategorizationTier2: '',
+    productCategorizationTier3: '',
+    categorizationTier1: '',
     assignedPersonUserId: '',
   };
 }
@@ -117,8 +151,9 @@ export default function TicketManagementPage() {
 
   const myTickets = useMemo(() => {
     if (!canUseManagement) return [];
+    if (role === AUTH_ROLES.ADMIN) return allTickets;
     return allTickets.filter((ticket) => matchesCurrentUser(ticket.Owner, user));
-  }, [allTickets, canUseManagement, user]);
+  }, [allTickets, canUseManagement, role, user]);
 
   const assignedTickets = useMemo(() => {
     if (!canUseManagement) return [];
@@ -159,6 +194,13 @@ export default function TicketManagementPage() {
       priority: ticket.priority,
       assignedGroup: ticket.assignedGroup,
       serviceType: ticket.serviceType,
+      slaType: ticket.slaType || getDefaultSlaForPriority(ticket.priority).slaType,
+      slaHours: String(ticket.slaHours || getDefaultSlaForPriority(ticket.priority).slaHours),
+      company: ticket.company || '',
+      productCategorizationTier1: ticket.productCategorizationTier1 || '',
+      productCategorizationTier2: ticket.productCategorizationTier2 || '',
+      productCategorizationTier3: ticket.productCategorizationTier3 || '',
+      categorizationTier1: ticket.categorizationTier1 || '',
       assignedPersonUserId: ticket.assignedPersonUserId ? String(ticket.assignedPersonUserId) : '',
     });
     setModalMode('edit');
@@ -183,7 +225,7 @@ export default function TicketManagementPage() {
     setSubmitting(false);
   }
 
-  function openDeleteModal(ticket) {
+function openDeleteModal(ticket) {
     setDeleteTarget(ticket);
   }
 
@@ -223,6 +265,13 @@ export default function TicketManagementPage() {
           priority: formData.priority,
           assignedGroup: formData.assignedGroup.trim(),
           serviceType: formData.serviceType.trim(),
+          slaType: formData.slaType,
+          slaHours: Number(formData.slaHours),
+          company: formData.company.trim(),
+          productCategorizationTier1: formData.productCategorizationTier1.trim(),
+          productCategorizationTier2: formData.productCategorizationTier2.trim(),
+          productCategorizationTier3: formData.productCategorizationTier3.trim(),
+          categorizationTier1: formData.categorizationTier1.trim(),
           submitDate,
           aging: calculateAging(submitDate),
           assignedPersonUserId: formData.assignedPersonUserId ? Number(formData.assignedPersonUserId) : null,
@@ -240,6 +289,13 @@ export default function TicketManagementPage() {
           priority: formData.priority,
           assignedGroup: formData.assignedGroup.trim(),
           serviceType: formData.serviceType.trim(),
+          slaType: formData.slaType,
+          slaHours: Number(formData.slaHours),
+          company: formData.company.trim(),
+          productCategorizationTier1: formData.productCategorizationTier1.trim(),
+          productCategorizationTier2: formData.productCategorizationTier2.trim(),
+          productCategorizationTier3: formData.productCategorizationTier3.trim(),
+          categorizationTier1: formData.categorizationTier1.trim(),
           assignedPersonUserId: formData.assignedPersonUserId ? Number(formData.assignedPersonUserId) : null,
           aging: calculateAging(selectedTicket.submitDate),
         };
@@ -266,6 +322,16 @@ export default function TicketManagementPage() {
     }
   }
 
+  function handlePriorityChange(priority) {
+    const defaultSla = getDefaultSlaForPriority(priority);
+    setFormData((current) => ({
+      ...current,
+      priority,
+      slaType: defaultSla.slaType,
+      slaHours: String(defaultSla.slaHours),
+    }));
+  }
+
   return (
     <div className="ticket-page">
       <div className="ticket-shell">
@@ -278,6 +344,8 @@ export default function TicketManagementPage() {
           <nav className="sidebar-links" aria-label="Primary navigation">
             <NavLink to="/" end>Home</NavLink>
             <NavLink to="/dashboard">Dashboard</NavLink>
+            <NavLink to="/tickets">Ticket Management</NavLink>
+            <NavLink to="/statistics">Analytics</NavLink>
           </nav>
 
           <div className="sidebar-divider"></div>
@@ -349,11 +417,14 @@ export default function TicketManagementPage() {
           ) : (
             <section className="ticket-grid">
               {visibleTickets.map((ticket) => (
-                <article className="ticket-card" key={ticket.id}>
+                <article className={getTicketCardClass(ticket)} key={ticket.id}>
                   <div className="ticket-card-top">
                     <div>
                       <p className="ticket-card-label">{ticket.id}</p>
-                      <h3>{ticket.serviceType}</h3>
+                      <h3><Link to={`/tickets/${encodeURIComponent(ticket.id)}`}>{ticket.serviceType}</Link></h3>
+                      <span className={`ticket-sla-pill ${ticket.slaUrgency || 'none'}`}>
+                        SLA: {ticket.slaRemainingLabel || '-'}
+                      </span>
                     </div>
                     <div className="ticket-badges">
                       <span className={`status-pill ${getStatusClass(ticket.status)}`}>{ticket.status}</span>
@@ -367,11 +438,17 @@ export default function TicketManagementPage() {
                     <div><dt>Owner</dt><dd>{ticket.Owner}</dd></div>
                     <div><dt>Assigned</dt><dd>{ticket.Assigned_Person}</dd></div>
                     <div><dt>Queue</dt><dd>{ticket.assignedGroup}</dd></div>
-                    <div><dt>Submitted</dt><dd>{ticket.submitDate}</dd></div>
+                    <div><dt>Company</dt><dd>{ticket.company || '-'}</dd></div>
+                    <div><dt>Submitted</dt><dd>{formatDate(ticket.submitDate)}</dd></div>
+                    <div><dt>Last Modified</dt><dd>{formatDate(ticket.lastModifiedDate)}</dd></div>
+                    <div><dt>Close Date</dt><dd>{formatDate(ticket.closeDate)}</dd></div>
                     <div><dt>Aging</dt><dd>{ticket.aging} days</dd></div>
                   </dl>
 
                   <div className="ticket-card-footer">
+                    <Link className="card-action card-detail-link" to={`/tickets/${encodeURIComponent(ticket.id)}`}>
+                      Details
+                    </Link>
                     {canEditMyTickets && activeTab === 'my' && (
                       <>
                         <button type="button" className="card-action card-action-secondary" onClick={() => openDeleteModal(ticket)}>
@@ -408,7 +485,7 @@ export default function TicketManagementPage() {
                 <input id="ticket-description" type="text" required value={formData.description} onChange={(e) => setFormData((current) => ({ ...current, description: e.target.value }))} />
 
                 <label htmlFor="ticket-priority">Priority</label>
-                <select id="ticket-priority" required value={formData.priority} onChange={(e) => setFormData((current) => ({ ...current, priority: e.target.value }))}>
+                <select id="ticket-priority" required value={formData.priority} onChange={(e) => handlePriorityChange(e.target.value)}>
                   <option value="Critical">Critical</option>
                   <option value="High">High</option>
                   <option value="Medium">Medium</option>
@@ -420,6 +497,30 @@ export default function TicketManagementPage() {
 
                 <label htmlFor="ticket-service">Service Type</label>
                 <input id="ticket-service" type="text" required value={formData.serviceType} onChange={(e) => setFormData((current) => ({ ...current, serviceType: e.target.value }))} />
+
+                <label htmlFor="ticket-sla-type">SLA Type</label>
+                <select id="ticket-sla-type" required value={formData.slaType} onChange={(e) => setFormData((current) => ({ ...current, slaType: e.target.value }))}>
+                  <option value="normal">Normal Hours</option>
+                  <option value="business">Business Hours</option>
+                </select>
+
+                <label htmlFor="ticket-sla-hours">SLA Hours</label>
+                <input id="ticket-sla-hours" type="number" required min="1" value={formData.slaHours} onChange={(e) => setFormData((current) => ({ ...current, slaHours: e.target.value }))} />
+
+                <label htmlFor="ticket-company">Company</label>
+                <input id="ticket-company" type="text" required value={formData.company} onChange={(e) => setFormData((current) => ({ ...current, company: e.target.value }))} />
+
+                <label htmlFor="ticket-product-tier-1">Product Categorization Tier 1</label>
+                <input id="ticket-product-tier-1" type="text" value={formData.productCategorizationTier1} onChange={(e) => setFormData((current) => ({ ...current, productCategorizationTier1: e.target.value }))} />
+
+                <label htmlFor="ticket-product-tier-2">Product Categorization Tier 2</label>
+                <input id="ticket-product-tier-2" type="text" value={formData.productCategorizationTier2} onChange={(e) => setFormData((current) => ({ ...current, productCategorizationTier2: e.target.value }))} />
+
+                <label htmlFor="ticket-product-tier-3">Product Categorization Tier 3</label>
+                <input id="ticket-product-tier-3" type="text" value={formData.productCategorizationTier3} onChange={(e) => setFormData((current) => ({ ...current, productCategorizationTier3: e.target.value }))} />
+
+                <label htmlFor="ticket-category-tier-1">Categorization Tier 1</label>
+                <input id="ticket-category-tier-1" type="text" value={formData.categorizationTier1} onChange={(e) => setFormData((current) => ({ ...current, categorizationTier1: e.target.value }))} />
 
                 <label htmlFor="ticket-assigned">Assigned User</label>
                 <select id="ticket-assigned" required value={formData.assignedPersonUserId} onChange={(e) => setFormData((current) => ({ ...current, assignedPersonUserId: e.target.value }))}>
