@@ -31,9 +31,20 @@ export function AuthProvider({ children }) {
   }
 
   async function signup(payload) {
-    const session = await authService.signup(payload);
-    setUser(session.user);
-    return session.user;
+    // Signup no longer establishes a session — the user has to verify their
+    // email first. The caller (LoginPage) reads the returned { message, email }
+    // and routes the user to the verify-email page.
+    return authService.signup(payload);
+  }
+
+  async function verifyEmail(payload) {
+    const response = await authService.verifyEmail(payload);
+    setUser(response.user);
+    return response.user;
+  }
+
+  async function resendVerification(payload) {
+    return authService.resendVerification(payload);
   }
 
   async function logout() {
@@ -49,6 +60,8 @@ export function AuthProvider({ children }) {
       isBootstrapping,
       login,
       signup,
+      verifyEmail,
+      resendVerification,
       logout,
     }),
     [user, isBootstrapping]

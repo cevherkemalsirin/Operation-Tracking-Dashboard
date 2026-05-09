@@ -73,7 +73,23 @@ The seed creates three demo accounts:
 | operator@nokia.com | operator1234 | operator |
 | viewer@nokia.com | viewer1234 | viewer |
 
-### 4. Configure the frontend
+### 4. (Optional) Configure email delivery
+
+The signup flow sends a 6-digit verification code via email. By default, with no SMTP settings, the server uses [Ethereal](https://ethereal.email/) — a fake-inbox service that gives you a preview URL printed to the console for every email sent. That's enough to develop and test the verification flow end-to-end without setting up real email delivery.
+
+To send to **real inboxes** (e.g. for a demo to your team), set the SMTP variables in `server/.env`. A common choice for personal testing is Gmail with an [app password](https://support.google.com/mail/answer/185833):
+
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your.address@gmail.com
+SMTP_PASS=<16-character app password, NOT your Gmail password>
+EMAIL_FROM="Operation Tracking <your.address@gmail.com>"
+```
+
+For production, use a transactional email service (SendGrid, Mailgun, AWS SES, Resend) — same SMTP vars, different host.
+
+### 5. Configure the frontend
 
 ```bash
 cd ../client
@@ -143,6 +159,9 @@ All `/api/*` routes except `/api/health` and `/api/auth/*` require a `Bearer` to
 GET    /api/health
 POST   /api/auth/signup
 POST   /api/auth/login
+POST   /api/auth/logout
+POST   /api/auth/verify-email
+POST   /api/auth/resend-verification
 GET    /api/auth/me
 
 GET    /api/tickets

@@ -15,12 +15,28 @@ export const authService = {
   },
 
   async signup({ name, email, password }) {
-    const response = await apiRequest('/auth/signup', {
+    // Returns { message, email } — the user is NOT logged in yet. They need
+    // to verify their email first via verifyEmail() below.
+    return apiRequest('/auth/signup', {
       method: 'POST',
       body: JSON.stringify({ name, email, password }),
     });
+  },
+
+  async verifyEmail({ email, code }) {
+    const response = await apiRequest('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
+    });
     saveStoredUser(response.user);
     return response;
+  },
+
+  async resendVerification({ email }) {
+    return apiRequest('/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
   },
 
   async logout() {

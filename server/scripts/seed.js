@@ -23,11 +23,11 @@ async function run() {
   const viewerHash = await bcrypt.hash('viewer1234', 10);
 
   const usersResult = await query(
-    `INSERT INTO users (name, email, password_hash, role)
+    `INSERT INTO users (name, email, password_hash, role, email_verified)
      VALUES
-       ('Admin User', 'admin@nokia.com', $1, 'admin'),
-       ('Operator', 'operator@nokia.com', $2, 'operator'),
-       ('Viewer User', 'viewer@nokia.com', $3, 'viewer')
+       ('Admin User', 'admin@nokia.com', $1, 'admin', true),
+       ('Operator', 'operator@nokia.com', $2, 'operator', true),
+       ('Viewer User', 'viewer@nokia.com', $3, 'viewer', true)
      RETURNING id, name`,
     [adminHash, operatorHash, viewerHash]
   );

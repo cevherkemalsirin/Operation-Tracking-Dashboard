@@ -30,13 +30,32 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       if (mode === 'signup') {
-        await signup({ name, email, password, rememberMe });
-      } else {
-        await login({ email, password, rememberMe });
+        const response = await signup({ name, email, password, rememberMe });
+        // Server created the account but didn't establish a session — the
+        // user has to enter the code we just emailed them.
+        navigate('/verify', {
+          replace: true,
+          state: {
+            email: response?.email || email,
+            notice: response?.message,
+          },
+        });
+        return;
       }
+
+      await login({ email, password, rememberMe });
       const redirectTarget = location.state?.from?.pathname || '/welcome';
       navigate(redirectTarget, { replace: true });
     } catch (err) {
+      // If the account exists but isn't verified yet, send them to verify
+      // instead of just showing an error.
+      if (err.message && /not verified/i.test(err.message)) {
+        navigate('/verify', {
+          replace: true,
+          state: { email, notice: err.message },
+        });
+        return;
+      }
       setError(err.message || 'Sign in failed. Please try again.');
     } finally {
       setIsSubmitting(false);

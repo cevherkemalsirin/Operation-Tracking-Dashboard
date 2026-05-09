@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 import WelcomePage from './pages/WelcomePage';
 import DashboardPage from './pages/DashboardPage';
 import TicketManagementPage from './pages/TicketManagementPage';
@@ -15,6 +16,7 @@ export default function App() {
       <Route path="/" element={<HomePage />} />
       <Route element={<PublicOnlyRoute />}>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/verify" element={<VerifyEmailPage />} />
       </Route>
 
       <Route element={<ProtectedRoute />}>
