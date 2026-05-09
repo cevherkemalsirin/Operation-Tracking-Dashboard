@@ -13,11 +13,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState(location.state?.notice || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
     setError('');
+    setNotice('');
     if (!email.trim() || password.trim().length < 6) {
       setError('Please enter a valid email and a password with at least 6 characters.');
       return;
@@ -113,6 +115,7 @@ export default function LoginPage() {
             <button type="submit" className="login-btn" disabled={isSubmitting}>
               {isSubmitting ? (mode === 'login' ? 'Signing in...' : 'Creating account...') : (mode === 'login' ? 'Login' : 'Sign Up')}
             </button>
+            {notice && <p className="divider" role="status">{notice}</p>}
             {error && <p className="error-text" role="alert">{error}</p>}
           </form>
           <p className="divider">{mode === 'signup' ? 'New accounts are created as viewer by default.' : 'Use one of the seeded demo accounts or sign up.'}</p>

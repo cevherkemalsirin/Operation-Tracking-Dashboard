@@ -38,9 +38,9 @@ export function AuthProvider({ children }) {
   }
 
   async function verifyEmail(payload) {
-    const response = await authService.verifyEmail(payload);
-    setUser(response.user);
-    return response.user;
+    // Verification doesn't establish a session — the user is sent back to
+    // the login page after this resolves.
+    return authService.verifyEmail(payload);
   }
 
   async function resendVerification(payload) {

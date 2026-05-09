@@ -24,12 +24,12 @@ export const authService = {
   },
 
   async verifyEmail({ email, code }) {
-    const response = await apiRequest('/auth/verify-email', {
+    // Returns { message }. Verification flips the user's email_verified flag
+    // but does NOT sign them in — they have to go back to the login page.
+    return apiRequest('/auth/verify-email', {
       method: 'POST',
       body: JSON.stringify({ email, code }),
     });
-    saveStoredUser(response.user);
-    return response;
   },
 
   async resendVerification({ email }) {

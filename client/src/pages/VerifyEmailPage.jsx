@@ -36,8 +36,11 @@ export default function VerifyEmailPage() {
 
     setIsSubmitting(true);
     try {
-      await verifyEmail({ email: email.trim(), code: code.trim() });
-      navigate('/welcome', { replace: true });
+      const response = await verifyEmail({ email: email.trim(), code: code.trim() });
+      navigate('/login', {
+        replace: true,
+        state: { notice: response?.message || 'Email verified. You can now log in.' },
+      });
     } catch (err) {
       setError(err.message || 'Verification failed.');
     } finally {

@@ -250,15 +250,16 @@ export async function verifyEmail(req, res) {
     });
   }
 
-  // Success — mark code consumed, flip the user, log them in.
+  // Success — mark code consumed and flip the user. We deliberately do NOT
+  // sign them in here; verifying ownership of the inbox is a separate step
+  // from authenticating, so the user goes back to the login page.
   await query(
     'UPDATE email_verification_codes SET consumed_at = NOW() WHERE id = $1',
     [codeRow.id]
   );
   await query('UPDATE users SET email_verified = true WHERE id = $1', [user.id]);
 
-  setSessionCookie(res, signToken(user));
-  return res.json({ user: userResponse(user) });
+  return res.json({ message: 'Email verified. You can now log in.' });
 }
 
 export async function resendVerification(req, res) {
