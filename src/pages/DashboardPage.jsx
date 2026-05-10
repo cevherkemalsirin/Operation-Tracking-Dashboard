@@ -4,6 +4,8 @@ import '../styles/dashboard.css';
 import { useAuth } from '../auth';
 import { fetchTickets, getDashboardTicketsForRole } from '../utils/tickets';
 
+const TICKETS_PER_PAGE = 20;
+
 function getStatusClass(status) {
   if (status === 'Open') return 'open';
   if (status === 'In Progress') return 'progress';
@@ -44,6 +46,7 @@ export default function DashboardPage() {
   const [filters, setFilters] = useState({ search: '', status: 'All', priority: 'All', group: 'All', date: '' });
   const [error, setError] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     async function loadTickets() {
@@ -73,12 +76,26 @@ export default function DashboardPage() {
     });
   }, [tickets, filters]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredTickets.length / TICKETS_PER_PAGE));
+  const pageStart = (currentPage - 1) * TICKETS_PER_PAGE;
+  const pageEnd = pageStart + TICKETS_PER_PAGE;
+  const visibleTickets = filteredTickets.slice(pageStart, pageEnd);
+  const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   function updateFilter(name, value) {
     setFilters((current) => ({ ...current, [name]: value }));
+    setCurrentPage(1);
   }
 
   function resetFilters() {
     setFilters({ search: '', status: 'All', priority: 'All', group: 'All', date: '' });
+    setCurrentPage(1);
   }
 
   return (
@@ -183,7 +200,7 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredTickets.map((ticket) => (
+                  {visibleTickets.map((ticket) => (
                     <tr className={getTicketRowClass(ticket)} key={ticket.id}>
                       <td className="ticket-id"><Link className="ticket-detail-link" to={`/tickets/${encodeURIComponent(ticket.id)}`}>{ticket.id}</Link></td>
                       <td className="description-cell">{ticket.description}</td>
@@ -208,6 +225,43 @@ export default function DashboardPage() {
                 </tbody>
               </table>
             </div>
+
+            {filteredTickets.length > 0 && (
+              <div className="dashboard-pagination" aria-label="Ticket pagination">
+                <p>
+                  Showing {pageStart + 1}-{Math.min(pageEnd, filteredTickets.length)} of {filteredTickets.length} tickets
+                </p>
+                <div className="pagination-buttons">
+                  <button
+                    type="button"
+                    className="pagination-button"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  >
+                    Previous
+                  </button>
+                  {pageNumbers.map((pageNumber) => (
+                    <button
+                      type="button"
+                      key={pageNumber}
+                      className={currentPage === pageNumber ? 'pagination-button active' : 'pagination-button'}
+                      aria-current={currentPage === pageNumber ? 'page' : undefined}
+                      onClick={() => setCurrentPage(pageNumber)}
+                    >
+                      {pageNumber}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className="pagination-button"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
             {(error || filteredTickets.length === 0) && <div className="empty-state">{error || 'No tickets match the selected filters.'}</div>}
           </section>
         </main>
