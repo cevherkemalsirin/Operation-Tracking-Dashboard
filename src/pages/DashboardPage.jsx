@@ -29,6 +29,24 @@ function getTicketRowClass(ticket) {
   return `sla-row sla-row-${ticket.slaUrgency || 'none'}`;
 }
 
+function isCompletedTicket(ticket) {
+  return ticket.status === 'Resolved' || ticket.status === 'Closed';
+}
+
+function matchesSlaFilter(ticket, slaFilter) {
+  if (slaFilter === 'All') return true;
+  if (isCompletedTicket(ticket)) return false;
+
+  if (slaFilter === 'Overdue') return ticket.slaUrgency === 'overdue';
+  if (slaFilter === 'Urgent') return ticket.slaUrgency === 'danger';
+  if (slaFilter === 'Warning') return ticket.slaUrgency === 'warning';
+  if (slaFilter === 'Normal') {
+    return ticket.slaUrgency === 'normal' || ticket.slaUrgency === 'none' || !ticket.slaUrgency;
+  }
+
+  return true;
+}
+
 function displayValue(value) {
   return value || '-';
 }
@@ -43,7 +61,7 @@ function formatDate(value) {
 export default function DashboardPage() {
   const { role } = useAuth();
   const [tickets, setTickets] = useState([]);
-  const [filters, setFilters] = useState({ search: '', status: 'All', priority: 'All', group: 'All', date: '' });
+  const [filters, setFilters] = useState({ search: '', status: 'All', priority: 'All', group: 'All', date: '', sla: 'All' });
   const [error, setError] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -72,7 +90,8 @@ export default function DashboardPage() {
       const matchesPriority = filters.priority === 'All' || ticket.priority === filters.priority;
       const matchesGroup = filters.group === 'All' || ticket.assignedGroup === filters.group;
       const matchesDate = !filters.date || ticket.submitDate === filters.date;
-      return matchesSearch && matchesStatus && matchesPriority && matchesGroup && matchesDate;
+      const matchesSla = matchesSlaFilter(ticket, filters.sla);
+      return matchesSearch && matchesStatus && matchesPriority && matchesGroup && matchesDate && matchesSla;
     });
   }, [tickets, filters]);
 
@@ -94,7 +113,7 @@ export default function DashboardPage() {
   }
 
   function resetFilters() {
-    setFilters({ search: '', status: 'All', priority: 'All', group: 'All', date: '' });
+    setFilters({ search: '', status: 'All', priority: 'All', group: 'All', date: '', sla: 'All' });
     setCurrentPage(1);
   }
 
@@ -154,6 +173,7 @@ export default function DashboardPage() {
               <div className="field"><label htmlFor="priorityFilter">Priority</label><select id="priorityFilter" value={filters.priority} onChange={(e)=>updateFilter('priority', e.target.value)}><option value="All">All</option><option value="Critical">Critical</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select></div>
               <div className="field"><label htmlFor="groupFilter">Assigned Group</label><select id="groupFilter" value={filters.group} onChange={(e)=>updateFilter('group', e.target.value)}><option value="All">All</option><option value="Messaging Support">Messaging Support</option><option value="Network Team">Network Team</option><option value="Desktop Support">Desktop Support</option><option value="Field Support">Field Support</option><option value="Application Support">Application Support</option><option value="Service Desk">Service Desk</option></select></div>
               <div className="field"><label htmlFor="dateFilter">Submit Date</label><input id="dateFilter" type="date" value={filters.date} onChange={(e)=>updateFilter('date', e.target.value)} /></div>
+              <div className="field"><label htmlFor="slaFilter">SLA</label><select id="slaFilter" value={filters.sla} onChange={(e)=>updateFilter('sla', e.target.value)}><option value="All">All</option><option value="Overdue">Overdue</option><option value="Urgent">Urgent</option><option value="Warning">Warning</option><option value="Normal">Normal</option></select></div>
             </div>
           </section>
 

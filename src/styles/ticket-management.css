@@ -222,7 +222,7 @@
 
 .toolbar-filters {
   display: grid;
-  grid-template-columns: minmax(220px, 1.5fr) repeat(2, minmax(150px, 0.7fr));
+  grid-template-columns: minmax(220px, 1.5fr) repeat(3, minmax(130px, 0.7fr));
   gap: 10px;
 }
 

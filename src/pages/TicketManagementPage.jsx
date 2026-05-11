@@ -56,6 +56,24 @@ function getTicketCardClass(ticket) {
   return 'ticket-card';
 }
 
+function isCompletedTicket(ticket) {
+  return ticket.status === 'Resolved' || ticket.status === 'Closed';
+}
+
+function matchesSlaFilter(ticket, slaFilter) {
+  if (!slaFilter) return true;
+  if (isCompletedTicket(ticket)) return false;
+
+  if (slaFilter === 'overdue') return ticket.slaUrgency === 'overdue';
+  if (slaFilter === 'urgent') return ticket.slaUrgency === 'danger';
+  if (slaFilter === 'warning') return ticket.slaUrgency === 'warning';
+  if (slaFilter === 'normal') {
+    return ticket.slaUrgency === 'normal' || ticket.slaUrgency === 'none' || !ticket.slaUrgency;
+  }
+
+  return true;
+}
+
 function getNextTicketId(tickets) {
   const nextNumber = tickets.reduce((current, ticket) => {
     const numericId = Number.parseInt(String(ticket.id).replace(/\D/g, ''), 10);
@@ -115,7 +133,7 @@ export default function TicketManagementPage() {
   const [allTickets, setAllTickets] = useState([]);
   const [users, setUsers] = useState([]);
   const [activeTab, setActiveTab] = useState('my');
-  const [filters, setFilters] = useState({ search: '', status: '', priority: '' });
+  const [filters, setFilters] = useState({ search: '', status: '', priority: '', sla: '' });
   const [currentPage, setCurrentPage] = useState(1);
   const [modalMode, setModalMode] = useState(null);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -178,8 +196,9 @@ export default function TicketManagementPage() {
         ticket.serviceType.toLowerCase().includes(searchTerm);
       const matchesStatus = !filters.status || ticket.status === filters.status;
       const matchesPriority = !filters.priority || ticket.priority === filters.priority;
+      const matchesSla = matchesSlaFilter(ticket, filters.sla);
 
-      return matchesSearch && matchesStatus && matchesPriority;
+      return matchesSearch && matchesStatus && matchesPriority && matchesSla;
     });
   }, [sourceTickets, filters]);
 
@@ -424,6 +443,13 @@ export default function TicketManagementPage() {
                 <option value="High">High</option>
                 <option value="Medium">Medium</option>
                 <option value="Low">Low</option>
+              </select>
+              <select value={filters.sla} onChange={(e) => updateFilter('sla', e.target.value)} aria-label="SLA filter">
+                <option value="">All SLA</option>
+                <option value="overdue">Overdue</option>
+                <option value="urgent">Urgent</option>
+                <option value="warning">Warning</option>
+                <option value="normal">Normal</option>
               </select>
             </div>
 
