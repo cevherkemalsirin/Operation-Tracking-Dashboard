@@ -24,6 +24,31 @@ const demoUsers = [
   { key: 'viewer', name: 'Viewer User', email: 'viewer@example.com', password: 'viewer1234', role: 'viewer' },
 ];
 
+// Teams that must exist for the demo data to be consistent with ticket
+// assigned_group values. Keep names exactly in sync with the seeding
+// done by the migration `1700000002000_add-teams.js` — backfill relies
+// on exact-name match.
+const demoTeams = [
+  { name: 'Application Support', department: 'Engineering' },
+  { name: 'Database Team', department: 'Engineering' },
+  { name: 'Desktop Support', department: 'IT Operations' },
+  { name: 'Field Support', department: 'IT Operations' },
+  { name: 'Identity Team', department: 'Security' },
+  { name: 'Messaging Support', department: 'IT Operations' },
+  { name: 'Network Team', department: 'Infrastructure' },
+  { name: 'Service Desk', department: 'IT Operations' },
+];
+
+// Which operators belong to which teams. A user can be on multiple teams.
+// Viewer is intentionally not on any team.
+const demoTeamMemberships = {
+  cevher: ['Application Support', 'Identity Team', 'Messaging Support'],
+  vlad:   ['Network Team', 'Database Team'],
+  melika: ['Desktop Support', 'Messaging Support'],
+  alex:   ['Service Desk', 'Field Support'],
+  sara:   ['Service Desk', 'Field Support'],
+};
+
 const baseTicketTemplates = [
   ['Email delivery delayed for finance department', 'Open', 'High', 'Messaging Support', 'Email', 'Nokia', 'Infrastructure', 'Messaging', 'Exchange', 'Incident', 'cevher', 'vlad', '2026-05-10T08:30:00+03:00'],
   ['VPN connection drops for remote sales employee', 'In Progress', 'Medium', 'Network Team', 'Access', 'Nokia', 'Network', 'Remote Access', 'VPN', 'Connectivity', 'vlad', 'cevher', '2026-05-09T14:00:00+03:00'],
@@ -180,7 +205,39 @@ async function insertUsers() {
   return userIdByKey;
 }
 
-async function insertTickets(userIdByKey) {
+async function insertTeams() {
+  const teamIdByName = {};
+
+  for (const team of demoTeams) {
+    const result = await query(
+      `INSERT INTO teams (name, department)
+       VALUES ($1, $2)
+       RETURNING id`,
+      [team.name, team.department]
+    );
+    teamIdByName[team.name] = result.rows[0].id;
+  }
+
+  return teamIdByName;
+}
+
+async function insertTeamMemberships(userIdByKey, teamIdByName) {
+  for (const [userKey, teamNames] of Object.entries(demoTeamMemberships)) {
+    const userId = userIdByKey[userKey];
+    if (!userId) continue;
+
+    for (const teamName of teamNames) {
+      const teamId = teamIdByName[teamName];
+      if (!teamId) continue;
+      await query(
+        `INSERT INTO team_members (team_id, user_id) VALUES ($1, $2)`,
+        [teamId, userId]
+      );
+    }
+  }
+}
+
+async function insertTickets(userIdByKey, teamIdByName) {
   for (const [index, template] of ticketTemplates.entries()) {
     const [
       description,
@@ -206,6 +263,7 @@ async function insertTickets(userIdByKey) {
     const ticketId = `INC${String(1301 + index).padStart(6, '0')}`;
     const ownerUserId = userIdByKey[ownerKey];
     const assignedUserId = userIdByKey[assignedKey];
+    const teamId = teamIdByName[assignedGroup] ?? null;
 
     await query(
       `INSERT INTO tickets (
@@ -214,6 +272,7 @@ async function insertTickets(userIdByKey) {
         status,
         priority,
         assigned_group,
+        team_id,
         service_type,
         submit_date,
         last_modified_date,
@@ -231,13 +290,14 @@ async function insertTickets(userIdByKey) {
         assigned_person_user_id,
         created_at,
         updated_at
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)`,
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)`,
       [
         ticketId,
         description,
         status,
         priority,
         assignedGroup,
+        teamId,
         serviceType,
         getDateOnly(submitDate),
         getDateOnly(updatedAt),
@@ -283,16 +343,17 @@ async function insertTickets(userIdByKey) {
 
 async function run() {
   // Reset the data tables. CASCADE clears child rows in ticket_history /
-  // ticket_comments, RESTART IDENTITY resets the SERIAL counters so demo
-  // IDs stay predictable between runs.
-  await query('TRUNCATE TABLE tickets RESTART IDENTITY CASCADE;');
-  await query('TRUNCATE TABLE users RESTART IDENTITY CASCADE;');
+  // ticket_comments / team_members, RESTART IDENTITY resets the SERIAL
+  // counters so demo IDs stay predictable between runs.
+  await query('TRUNCATE TABLE tickets, team_members, teams, users RESTART IDENTITY CASCADE;');
 
   const userIdByKey = await insertUsers();
-  await insertTickets(userIdByKey);
+  const teamIdByName = await insertTeams();
+  await insertTeamMemberships(userIdByKey, teamIdByName);
+  await insertTickets(userIdByKey, teamIdByName);
 
   console.log('Database seeded successfully.');
-  console.log(`Created ${demoUsers.length} users and ${ticketTemplates.length} tickets.`);
+  console.log(`Created ${demoUsers.length} users, ${demoTeams.length} teams, and ${ticketTemplates.length} tickets.`);
   console.log('Demo logins:');
   for (const demoUser of demoUsers) {
     console.log(`- ${demoUser.email} / ${demoUser.password} (${demoUser.role})`);
