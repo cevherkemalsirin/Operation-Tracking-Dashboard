@@ -4,6 +4,8 @@ import '../styles/dashboard.css';
 import { useAuth } from '../auth';
 import { fetchTickets, getDashboardTicketsForRole } from '../utils/tickets';
 
+const TICKETS_PER_PAGE = 20;
+
 function getStatusClass(status) {
   if (status === 'Open') return 'open';
   if (status === 'In Progress') return 'progress';
@@ -27,6 +29,24 @@ function getTicketRowClass(ticket) {
   return `sla-row sla-row-${ticket.slaUrgency || 'none'}`;
 }
 
+function isCompletedTicket(ticket) {
+  return ticket.status === 'Resolved' || ticket.status === 'Closed';
+}
+
+function matchesSlaFilter(ticket, slaFilter) {
+  if (slaFilter === 'All') return true;
+  if (isCompletedTicket(ticket)) return false;
+
+  if (slaFilter === 'Overdue') return ticket.slaUrgency === 'overdue';
+  if (slaFilter === 'Urgent') return ticket.slaUrgency === 'danger';
+  if (slaFilter === 'Warning') return ticket.slaUrgency === 'warning';
+  if (slaFilter === 'Normal') {
+    return ticket.slaUrgency === 'normal' || ticket.slaUrgency === 'none' || !ticket.slaUrgency;
+  }
+
+  return true;
+}
+
 function displayValue(value) {
   return value || '-';
 }
@@ -41,9 +61,10 @@ function formatDate(value) {
 export default function DashboardPage() {
   const { role } = useAuth();
   const [tickets, setTickets] = useState([]);
-  const [filters, setFilters] = useState({ search: '', status: 'All', priority: 'All', group: 'All', date: '' });
+  const [filters, setFilters] = useState({ search: '', status: 'All', priority: 'All', group: 'All', date: '', sla: 'All' });
   const [error, setError] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     async function loadTickets() {
@@ -69,16 +90,31 @@ export default function DashboardPage() {
       const matchesPriority = filters.priority === 'All' || ticket.priority === filters.priority;
       const matchesGroup = filters.group === 'All' || ticket.assignedGroup === filters.group;
       const matchesDate = !filters.date || ticket.submitDate === filters.date;
-      return matchesSearch && matchesStatus && matchesPriority && matchesGroup && matchesDate;
+      const matchesSla = matchesSlaFilter(ticket, filters.sla);
+      return matchesSearch && matchesStatus && matchesPriority && matchesGroup && matchesDate && matchesSla;
     });
   }, [tickets, filters]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredTickets.length / TICKETS_PER_PAGE));
+  const pageStart = (currentPage - 1) * TICKETS_PER_PAGE;
+  const pageEnd = pageStart + TICKETS_PER_PAGE;
+  const visibleTickets = filteredTickets.slice(pageStart, pageEnd);
+  const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   function updateFilter(name, value) {
     setFilters((current) => ({ ...current, [name]: value }));
+    setCurrentPage(1);
   }
 
   function resetFilters() {
-    setFilters({ search: '', status: 'All', priority: 'All', group: 'All', date: '' });
+    setFilters({ search: '', status: 'All', priority: 'All', group: 'All', date: '', sla: 'All' });
+    setCurrentPage(1);
   }
 
   return (
@@ -137,6 +173,7 @@ export default function DashboardPage() {
               <div className="field"><label htmlFor="priorityFilter">Priority</label><select id="priorityFilter" value={filters.priority} onChange={(e)=>updateFilter('priority', e.target.value)}><option value="All">All</option><option value="Critical">Critical</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select></div>
               <div className="field"><label htmlFor="groupFilter">Assigned Group</label><select id="groupFilter" value={filters.group} onChange={(e)=>updateFilter('group', e.target.value)}><option value="All">All</option><option value="Messaging Support">Messaging Support</option><option value="Network Team">Network Team</option><option value="Desktop Support">Desktop Support</option><option value="Field Support">Field Support</option><option value="Application Support">Application Support</option><option value="Service Desk">Service Desk</option></select></div>
               <div className="field"><label htmlFor="dateFilter">Submit Date</label><input id="dateFilter" type="date" value={filters.date} onChange={(e)=>updateFilter('date', e.target.value)} /></div>
+              <div className="field"><label htmlFor="slaFilter">SLA</label><select id="slaFilter" value={filters.sla} onChange={(e)=>updateFilter('sla', e.target.value)}><option value="All">All</option><option value="Overdue">Overdue</option><option value="Urgent">Urgent</option><option value="Warning">Warning</option><option value="Normal">Normal</option></select></div>
             </div>
           </section>
 
@@ -183,7 +220,7 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredTickets.map((ticket) => (
+                  {visibleTickets.map((ticket) => (
                     <tr className={getTicketRowClass(ticket)} key={ticket.id}>
                       <td className="ticket-id"><Link className="ticket-detail-link" to={`/tickets/${encodeURIComponent(ticket.id)}`}>{ticket.id}</Link></td>
                       <td className="description-cell">{ticket.description}</td>
@@ -208,6 +245,43 @@ export default function DashboardPage() {
                 </tbody>
               </table>
             </div>
+
+            {filteredTickets.length > 0 && (
+              <div className="dashboard-pagination" aria-label="Ticket pagination">
+                <p>
+                  Showing {pageStart + 1}-{Math.min(pageEnd, filteredTickets.length)} of {filteredTickets.length} tickets
+                </p>
+                <div className="pagination-buttons">
+                  <button
+                    type="button"
+                    className="pagination-button"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  >
+                    Previous
+                  </button>
+                  {pageNumbers.map((pageNumber) => (
+                    <button
+                      type="button"
+                      key={pageNumber}
+                      className={currentPage === pageNumber ? 'pagination-button active' : 'pagination-button'}
+                      aria-current={currentPage === pageNumber ? 'page' : undefined}
+                      onClick={() => setCurrentPage(pageNumber)}
+                    >
+                      {pageNumber}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className="pagination-button"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
             {(error || filteredTickets.length === 0) && <div className="empty-state">{error || 'No tickets match the selected filters.'}</div>}
           </section>
         </main>

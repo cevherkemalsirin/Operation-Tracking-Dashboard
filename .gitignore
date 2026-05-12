@@ -27,3 +27,8 @@ CLAUDE.md
 # Logs
 *.log
 npm-debug.log*
+node_modules/
+.vite/
+node_modules/
+.vite/
+.env

@@ -177,7 +177,6 @@ export function SLAPerformanceChart({ groups }) {
   const barW = Math.max(6, Math.min(barGroupW * 0.62, 54));
   const barOff = (barGroupW - barW) / 2;
   const toY = (v) => padT + plotH * (1 - v / yMax);
-  const toYpct = (pct) => padT + plotH * (1 - pct / 100);
   const bx = (i) => padL + i * barGroupW + barOff;
   const midX = (i) => padL + i * barGroupW + barGroupW / 2;
   const gridLines = Array.from({ length: 5 }, (_, i) => ({
@@ -185,7 +184,7 @@ export function SLAPerformanceChart({ groups }) {
     count: Math.round((i / 4) * yMax),
     pct: `${Math.round((i / 4) * 100)}%`,
   }));
-  const slaLinePts = enriched.map((g, i) => ({ x: midX(i), y: toYpct(g.slaRate) }));
+  const slaLinePts = enriched.map((g, i) => ({ x: midX(i), y: toY(g.total) }));
   const slaLinePath = smoothLine(slaLinePts);
 
   return (
