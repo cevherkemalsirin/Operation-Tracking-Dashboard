@@ -142,7 +142,7 @@ export async function login(req, res) {
 
   const normalizedEmail = email.trim().toLowerCase();
   const result = await query(
-    `SELECT id, name, email, password_hash, role, email_verified
+    `SELECT id, name, email, password_hash, role, email_verified, status
      FROM users
      WHERE email = $1`,
     [normalizedEmail]
@@ -159,6 +159,15 @@ export async function login(req, res) {
     return res.status(401).json({ message: 'Invalid email or password.' });
   }
 
+  // Disabled accounts can't log in. We check this AFTER the password match
+  // so the response doesn't leak whether the disabled email exists.
+  if (user.status === 'disabled') {
+    return res.status(403).json({
+      message: 'Your account has been disabled. Please contact an administrator.',
+      code: 'ACCOUNT_DISABLED',
+    });
+  }
+
   if (!user.email_verified) {
     return res.status(403).json({
       message: 'Your email address is not verified yet. Check your inbox for the code.',
@@ -166,6 +175,8 @@ export async function login(req, res) {
       email: user.email,
     });
   }
+
+  await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
 
   setSessionCookie(res, signToken(user));
   return res.json({ user: userResponse(user) });
