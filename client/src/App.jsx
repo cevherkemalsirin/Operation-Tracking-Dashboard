@@ -8,7 +8,10 @@ import TicketManagementPage from './pages/TicketManagementPage';
 import StatisticsPage from './pages/StatisticsPage';
 import TicketDetailPage from './pages/TicketDetailPage';
 import UsersPage from './pages/UsersPage';
-import { ProtectedRoute, PublicOnlyRoute } from './auth';
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminUsersPage from './pages/admin/AdminUsersPage';
+import AdminTeamsPage from './pages/admin/AdminTeamsPage';
+import { ProtectedRoute, PublicOnlyRoute, RoleRoute } from './auth';
 
 export default function App() {
   return (
@@ -26,6 +29,14 @@ export default function App() {
         <Route path="/tickets/:id" element={<TicketDetailPage />} />
         <Route path="/statistics" element={<StatisticsPage />} />
         <Route path="/users" element={<UsersPage />} />
+
+        <Route element={<RoleRoute allowedRoles={['admin']} />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Navigate to="users" replace />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="teams" element={<AdminTeamsPage />} />
+          </Route>
+        </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

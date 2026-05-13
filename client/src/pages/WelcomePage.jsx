@@ -65,6 +65,9 @@ export default function WelcomePage() {
               <QuickCard icon="/assets/login-welcome/Images/report.svg" label="Reports" />
               <QuickCard to="/statistics" icon="/assets/login-welcome/Images/analytics.svg" label="Analytics" />
               <QuickCard to="/users" icon="/assets/login-welcome/Images/user.svg" label="Users" />
+              {role === 'admin' && (
+                <QuickCard to="/admin" icon="/assets/login-welcome/Images/setting.svg" label="Admin Panel" />
+              )}
               <QuickCard icon="/assets/login-welcome/Images/setting.svg" label="Settings" />
             </div>
           </div>
