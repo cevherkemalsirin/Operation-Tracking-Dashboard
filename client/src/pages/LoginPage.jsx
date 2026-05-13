@@ -115,6 +115,16 @@ export default function LoginPage() {
             <button type="submit" className="login-btn" disabled={isSubmitting}>
               {isSubmitting ? (mode === 'login' ? 'Signing in...' : 'Creating account...') : (mode === 'login' ? 'Login' : 'Sign Up')}
             </button>
+            <p className="divider">OR</p>
+
+             <button type="button" className="social apple">
+              <img src="/assets/login-welcome/Images/social.png"alt="Apple"/>
+              </button>
+
+              <button type="button" className="social google">
+              <img src="/assets/login-welcome/Images/search (1).png"alt="Google"/>
+               </button>
+
             {notice && <p className="divider" role="status">{notice}</p>}
             {error && <p className="error-text" role="alert">{error}</p>}
           </form>
