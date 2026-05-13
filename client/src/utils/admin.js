@@ -20,3 +20,17 @@ export async function resetAdminUserPassword(userId) {
 export async function fetchAdminTeams() {
   return apiRequest('/admin/teams');
 }
+
+export async function createAdminTeam(payload) {
+  return apiRequest('/admin/teams', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAdminTeam(teamId, payload) {
+  return apiRequest(`/admin/teams/${encodeURIComponent(teamId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}

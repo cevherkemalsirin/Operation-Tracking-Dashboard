@@ -1,5 +1,12 @@
 import { Router } from 'express';
-import { listTeams, listUsers, resetUserPassword, updateUser } from '../controllers/adminController.js';
+import {
+  createTeam,
+  listTeams,
+  listUsers,
+  resetUserPassword,
+  updateTeam,
+  updateUser,
+} from '../controllers/adminController.js';
 import { authenticateToken, authorizeRoles } from '../middleware/authMiddleware.js';
 
 const router = Router();
@@ -13,5 +20,7 @@ router.patch('/users/:id', updateUser);
 router.post('/users/:id/reset-password', resetUserPassword);
 
 router.get('/teams', listTeams);
+router.post('/teams', createTeam);
+router.patch('/teams/:id', updateTeam);
 
 export default router;

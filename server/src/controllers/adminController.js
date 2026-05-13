@@ -287,6 +287,35 @@ const teamSelect = `
   ) tstats ON tstats.team_id = team.id
 `;
 
+async function fetchTeam(teamId, executor = { query }) {
+  const result = await executor.query(
+    `${teamSelect}
+     WHERE team.id = $1
+     GROUP BY team.id, tstats.total, tstats.solved, tstats.overdue`,
+    [teamId]
+  );
+  return result.rows[0] ? mapTeamRow(result.rows[0]) : null;
+}
+
+async function assignTeamMembers(executor, teamId, memberIds) {
+  await executor.query('DELETE FROM team_members WHERE team_id = $1', [teamId]);
+  if (!memberIds) return;
+  for (const rawId of memberIds) {
+    const userId = Number(rawId);
+    if (!Number.isInteger(userId)) {
+      throw httpError(400, 'memberIds must be integers.');
+    }
+    const exists = await executor.query('SELECT 1 FROM users WHERE id = $1', [userId]);
+    if (exists.rowCount === 0) {
+      throw httpError(400, `User ${userId} does not exist.`);
+    }
+    await executor.query(
+      'INSERT INTO team_members (team_id, user_id) VALUES ($1, $2)',
+      [teamId, userId]
+    );
+  }
+}
+
 export async function listTeams(req, res) {
   const result = await query(
     `${teamSelect}
@@ -294,6 +323,126 @@ export async function listTeams(req, res) {
      ORDER BY team.name ASC`
   );
   return res.json(result.rows.map(mapTeamRow));
+}
+
+export async function createTeam(req, res) {
+  const { name, description, department, memberIds } = req.body;
+
+  if (!name?.trim()) {
+    throw httpError(400, 'Team name is required.');
+  }
+  if (memberIds !== undefined && !Array.isArray(memberIds)) {
+    throw httpError(400, 'memberIds must be an array.');
+  }
+
+  const client = await pool.connect();
+  let createdId;
+  try {
+    await client.query('BEGIN');
+
+    const dup = await client.query('SELECT 1 FROM teams WHERE name = $1', [name.trim()]);
+    if (dup.rowCount > 0) {
+      throw httpError(409, 'A team with this name already exists.');
+    }
+
+    const result = await client.query(
+      `INSERT INTO teams (name, description, department)
+       VALUES ($1, $2, $3)
+       RETURNING id`,
+      [
+        name.trim(),
+        description?.trim() || null,
+        department?.trim() || null,
+      ]
+    );
+    createdId = result.rows[0].id;
+
+    await assignTeamMembers(client, createdId, memberIds || []);
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  const created = await fetchTeam(createdId);
+  return res.status(201).json(created);
+}
+
+export async function updateTeam(req, res) {
+  const teamId = Number(req.params.id);
+  if (!Number.isInteger(teamId)) {
+    throw httpError(400, 'Invalid team id.');
+  }
+
+  const { name, description, department, status, memberIds } = req.body;
+
+  if (name !== undefined && !name?.trim()) {
+    throw httpError(400, 'Team name cannot be empty.');
+  }
+  if (status !== undefined && !['active', 'disabled'].includes(status)) {
+    throw httpError(400, 'Status must be active or disabled.');
+  }
+  if (memberIds !== undefined && !Array.isArray(memberIds)) {
+    throw httpError(400, 'memberIds must be an array.');
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const existing = await client.query(
+      'SELECT id, name FROM teams WHERE id = $1 FOR UPDATE',
+      [teamId]
+    );
+    if (existing.rowCount === 0) {
+      throw httpError(404, 'Team not found.');
+    }
+
+    if (name && name.trim() !== existing.rows[0].name) {
+      const dup = await client.query(
+        'SELECT 1 FROM teams WHERE name = $1 AND id <> $2',
+        [name.trim(), teamId]
+      );
+      if (dup.rowCount > 0) {
+        throw httpError(409, 'Another team already uses this name.');
+      }
+    }
+
+    await client.query(
+      `UPDATE teams
+       SET
+         name = COALESCE($1, name),
+         description = COALESCE($2, description),
+         department = COALESCE($3, department),
+         status = COALESCE($4, status),
+         updated_at = NOW()
+       WHERE id = $5`,
+      [
+        name?.trim() ?? null,
+        description?.trim() || null,
+        department?.trim() || null,
+        status ?? null,
+        teamId,
+      ]
+    );
+
+    if (memberIds !== undefined) {
+      await assignTeamMembers(client, teamId, memberIds);
+    }
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  const updated = await fetchTeam(teamId);
+  return res.json(updated);
 }
 
 // ──────────────────────────────────────────────────────────────────────

@@ -330,7 +330,8 @@
 }
 
 .modal-form input,
-.modal-form select {
+.modal-form select,
+.modal-form textarea {
   min-height: 38px;
   padding: 8px 12px;
   border-radius: 6px;
@@ -339,10 +340,17 @@
   color: #f7f7f2;
   font-size: 14px;
   font-weight: 500;
+  font-family: inherit;
+}
+
+.modal-form textarea {
+  resize: vertical;
+  min-height: 70px;
 }
 
 .modal-form input:disabled,
-.modal-form select:disabled {
+.modal-form select:disabled,
+.modal-form textarea:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

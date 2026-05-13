@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchAdminTeams } from '../../utils/admin';
+import { fetchUsers } from '../../utils/users';
+import TeamFormModal from './TeamFormModal';
 
 const STATUS_OPTIONS = ['active', 'disabled'];
 
 export default function AdminTeamsPage() {
   const [teams, setTeams] = useState([]);
+  const [users, setUsers] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  // null = no modal; 'create' = create modal; {team object} = edit
+  const [modalTarget, setModalTarget] = useState(null);
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -16,17 +21,27 @@ export default function AdminTeamsPage() {
       try {
         setError('');
         setLoading(true);
-        const data = await fetchAdminTeams();
-        setTeams(data);
+        const [teamData, userData] = await Promise.all([fetchAdminTeams(), fetchUsers()]);
+        setTeams(teamData);
+        setUsers(userData);
       } catch (err) {
         setError(err.message || 'Failed to load teams.');
         setTeams([]);
+        setUsers([]);
       } finally {
         setLoading(false);
       }
     }
     load();
   }, []);
+
+  function handleTeamSaved(saved, { isCreate }) {
+    setTeams((current) => {
+      if (isCreate) return [...current, saved].sort((a, b) => a.name.localeCompare(b.name));
+      return current.map((t) => (t.id === saved.id ? saved : t));
+    });
+    setModalTarget(null);
+  }
 
   const filteredTeams = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -55,6 +70,9 @@ export default function AdminTeamsPage() {
           {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
         <span className="admin-count">{filteredTeams.length} of {teams.length}</span>
+        <button type="button" className="btn-primary" onClick={() => setModalTarget('create')}>
+          + Create team
+        </button>
       </div>
 
       {error && <p className="admin-error" role="alert">{error}</p>}
@@ -72,12 +90,13 @@ export default function AdminTeamsPage() {
                 <th>Status</th>
                 <th>Members</th>
                 <th>Activity</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {filteredTeams.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="admin-empty">No teams match these filters.</td>
+                  <td colSpan={7} className="admin-empty">No teams match these filters.</td>
                 </tr>
               ) : (
                 filteredTeams.map((team) => (
@@ -113,12 +132,24 @@ export default function AdminTeamsPage() {
                         </span>
                       </div>
                     </td>
+                    <td>
+                      <button type="button" className="btn-edit" onClick={() => setModalTarget(team)}>Edit</button>
+                    </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
         </div>
+      )}
+
+      {modalTarget && (
+        <TeamFormModal
+          team={modalTarget === 'create' ? null : modalTarget}
+          users={users}
+          onClose={() => setModalTarget(null)}
+          onSaved={handleTeamSaved}
+        />
       )}
     </div>
   );
