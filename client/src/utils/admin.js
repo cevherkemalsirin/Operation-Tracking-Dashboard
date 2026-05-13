@@ -3,3 +3,10 @@ import { apiRequest } from './api';
 export async function fetchAdminUsers() {
   return apiRequest('/admin/users');
 }
+
+export async function updateAdminUser(userId, payload) {
+  return apiRequest(`/admin/users/${encodeURIComponent(userId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}

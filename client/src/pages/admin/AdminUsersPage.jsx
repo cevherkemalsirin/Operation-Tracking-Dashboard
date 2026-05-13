@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchAdminUsers } from '../../utils/admin';
+import { fetchTeams } from '../../utils/teams';
+import EditUserModal from './EditUserModal';
 
 const ROLE_OPTIONS = ['admin', 'operator', 'viewer'];
 const STATUS_OPTIONS = ['active', 'disabled', 'pending'];
@@ -13,8 +15,10 @@ function formatLastLogin(value) {
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
+  const [teams, setTeams] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [editingUser, setEditingUser] = useState(null);
 
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('All');
@@ -25,17 +29,24 @@ export default function AdminUsersPage() {
       try {
         setError('');
         setLoading(true);
-        const data = await fetchAdminUsers();
-        setUsers(data);
+        const [usersData, teamsData] = await Promise.all([fetchAdminUsers(), fetchTeams()]);
+        setUsers(usersData);
+        setTeams(teamsData);
       } catch (err) {
         setError(err.message || 'Failed to load users.');
         setUsers([]);
+        setTeams([]);
       } finally {
         setLoading(false);
       }
     }
     load();
   }, []);
+
+  function handleUserSaved(updated) {
+    setUsers((current) => current.map((u) => (u.id === updated.id ? updated : u)));
+    setEditingUser(null);
+  }
 
   const filteredUsers = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -86,12 +97,13 @@ export default function AdminUsersPage() {
                 <th>Teams</th>
                 <th>Last login</th>
                 <th>Created</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="admin-empty">No users match these filters.</td>
+                  <td colSpan={8} className="admin-empty">No users match these filters.</td>
                 </tr>
               ) : (
                 filteredUsers.map((u) => (
@@ -113,12 +125,24 @@ export default function AdminUsersPage() {
                     </td>
                     <td>{formatLastLogin(u.lastLoginAt)}</td>
                     <td>{u.createdAt}</td>
+                    <td>
+                      <button type="button" className="btn-edit" onClick={() => setEditingUser(u)}>Edit</button>
+                    </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
         </div>
+      )}
+
+      {editingUser && (
+        <EditUserModal
+          user={editingUser}
+          teams={teams}
+          onClose={() => setEditingUser(null)}
+          onSaved={handleUserSaved}
+        />
       )}
     </div>
   );

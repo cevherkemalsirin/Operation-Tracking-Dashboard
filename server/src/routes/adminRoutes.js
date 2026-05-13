@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listUsers } from '../controllers/adminController.js';
+import { listUsers, updateUser } from '../controllers/adminController.js';
 import { authenticateToken, authorizeRoles } from '../middleware/authMiddleware.js';
 
 const router = Router();
@@ -9,5 +9,6 @@ router.use(authenticateToken);
 router.use(authorizeRoles('admin'));
 
 router.get('/users', listUsers);
+router.patch('/users/:id', updateUser);
 
 export default router;

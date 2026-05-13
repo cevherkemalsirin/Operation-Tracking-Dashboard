@@ -187,3 +187,188 @@
   color: #d8d8d0;
   font-size: 11px;
 }
+
+.btn-edit {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(143, 179, 255, 0.35);
+  background: rgba(143, 179, 255, 0.12);
+  color: #8fb3ff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-edit:hover {
+  background: rgba(143, 179, 255, 0.2);
+}
+
+/* ── Edit User modal ─────────────────────────────────────────────── */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.modal {
+  width: min(540px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  background: #0a1529;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+  color: #f7f7f2;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  color: #b9bbb3;
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: #f7f7f2;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+}
+
+.modal-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #b9bbb3;
+}
+
+.modal-form label > span {
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.modal-form input,
+.modal-form select {
+  min-height: 38px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f7f7f2;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.modal-form input:disabled,
+.modal-form select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal-hint {
+  font-size: 11px;
+  font-weight: 500;
+  color: #b9bbb3;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.modal-teams {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.modal-teams legend {
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #b9bbb3;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.modal-teams-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 12px;
+}
+
+.modal-team-check {
+  display: flex;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  color: #d8d8d0 !important;
+  cursor: pointer;
+}
+
+.modal-team-check input {
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  width: 14px;
+  height: 14px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.btn-primary {
+  padding: 9px 18px;
+  border-radius: 6px;
+  border: 1px solid #8fb3ff;
+  background: #8fb3ff;
+  color: #0a1529;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-secondary {
+  padding: 9px 18px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.05);
+  color: #f7f7f2;
+  font-weight: 700;
+  cursor: pointer;
+}
