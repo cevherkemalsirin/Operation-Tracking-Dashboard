@@ -134,59 +134,16 @@ function getMentionTrigger(value, caretIndex) {
   return textBeforeCaret.match(/(?:^|\s)@([\w.-]*)$/);
 }
 
-function getCaretPosition(textarea, wrapper) {
-  const textareaRect = textarea.getBoundingClientRect();
+function getTextareaPointerPosition(textarea, wrapper, event) {
   const wrapperRect = wrapper.getBoundingClientRect();
-  const style = window.getComputedStyle(textarea);
-  const mirror = document.createElement('div');
-  const marker = document.createElement('span');
+  const textareaRect = textarea.getBoundingClientRect();
+  const clientX = event?.clientX ?? textareaRect.left + 16;
+  const clientY = event?.clientY ?? textareaRect.top + 42;
 
-  const properties = [
-    'boxSizing',
-    'width',
-    'fontFamily',
-    'fontSize',
-    'fontWeight',
-    'lineHeight',
-    'letterSpacing',
-    'paddingTop',
-    'paddingRight',
-    'paddingBottom',
-    'paddingLeft',
-    'borderTopWidth',
-    'borderRightWidth',
-    'borderBottomWidth',
-    'borderLeftWidth',
-    'whiteSpace',
-    'wordWrap',
-  ];
-
-  mirror.style.position = 'absolute';
-  mirror.style.visibility = 'hidden';
-  mirror.style.left = `${textareaRect.left}px`;
-  mirror.style.top = `${textareaRect.top}px`;
-  mirror.style.height = 'auto';
-  mirror.style.whiteSpace = 'pre-wrap';
-  mirror.style.wordBreak = 'break-word';
-  mirror.style.overflowWrap = 'break-word';
-
-  properties.forEach((property) => {
-    mirror.style[property] = style[property];
-  });
-
-  mirror.textContent = textarea.value.slice(0, textarea.selectionStart);
-  marker.textContent = textarea.value.slice(textarea.selectionStart) || '.';
-  mirror.appendChild(marker);
-  document.body.appendChild(mirror);
-
-  const markerRect = marker.getBoundingClientRect();
-  const position = {
-    left: Math.min(Math.max(12, markerRect.left - wrapperRect.left), wrapperRect.width - 260),
-    top: markerRect.top - wrapperRect.top + 24,
+  return {
+    left: Math.min(Math.max(12, clientX - wrapperRect.left), wrapperRect.width - 260),
+    top: Math.max(12, clientY - wrapperRect.top + 16),
   };
-
-  document.body.removeChild(mirror);
-  return position;
 }
 
 export default function TicketDetailPage() {
@@ -272,7 +229,7 @@ export default function TicketDetailPage() {
       .slice(0, 6)
     : [];
 
-  function updateMentionPicker(textarea, nextValue = textarea.value) {
+  function updateMentionPicker(textarea, nextValue = textarea.value, event = null) {
     const trigger = getMentionTrigger(nextValue, textarea.selectionStart);
 
     if (!trigger) {
@@ -282,18 +239,18 @@ export default function TicketDetailPage() {
 
     setMentionSearch(trigger[1].trim().toLowerCase());
     if (commentInputWrapRef.current) {
-      setMentionPickerPosition(getCaretPosition(textarea, commentInputWrapRef.current));
+      setMentionPickerPosition(getTextareaPointerPosition(textarea, commentInputWrapRef.current, event));
     }
   }
 
   function handleCommentTextChange(event) {
     const nextValue = event.target.value;
     setCommentText(nextValue);
-    updateMentionPicker(event.target, nextValue);
+    updateMentionPicker(event.target, nextValue, event.nativeEvent);
   }
 
   function handleCommentCursorMove(event) {
-    updateMentionPicker(event.target);
+    updateMentionPicker(event.target, event.target.value, event.nativeEvent);
   }
 
   function addMention(userToMention) {
