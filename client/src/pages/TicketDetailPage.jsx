@@ -14,6 +14,8 @@ import {
 } from '../utils/tickets';
 import { fetchUsers } from '../utils/users';
 import { fetchTeams } from '../utils/teams';
+import { fetchSites } from '../utils/sites';
+import SiteMap from '../components/SiteMap';
 
 function displayValue(value) {
   return value || '-';
@@ -98,6 +100,7 @@ function buildEditForm(ticket) {
     status: ticket.status || 'Open',
     priority: ticket.priority || 'Medium',
     assignedGroup: ticket.assignedGroup || '',
+    siteId: ticket.siteId || '',
     serviceType: ticket.serviceType || '',
     slaType: ticket.slaType || defaultSla.slaType,
     slaHours: String(ticket.slaHours || defaultSla.slaHours),
@@ -155,6 +158,7 @@ export default function TicketDetailPage() {
   const [comments, setComments] = useState([]);
   const [users, setUsers] = useState([]);
   const [teams, setTeams] = useState([]);
+  const [sites, setSites] = useState([]);
   const [commentText, setCommentText] = useState('');
   const [mentionedUsers, setMentionedUsers] = useState([]);
   const [mentionSearch, setMentionSearch] = useState(null);
@@ -198,12 +202,14 @@ export default function TicketDetailPage() {
   useEffect(() => {
     async function loadSupportData() {
       try {
-        const [userData, teamData] = await Promise.all([fetchUsers(), fetchTeams()]);
+        const [userData, teamData, siteData] = await Promise.all([fetchUsers(), fetchTeams(), fetchSites()]);
         setUsers(userData);
         setTeams(teamData);
+        setSites(siteData);
       } catch (err) {
         setUsers([]);
         setTeams([]);
+        setSites([]);
       }
     }
 
@@ -218,6 +224,7 @@ export default function TicketDetailPage() {
     id: String(availableUser.id),
     name: availableUser.name,
   }));
+  const ticketSite = sites.find((site) => site.siteId === ticket?.siteId);
 
   const mentionSuggestions = mentionSearch !== null
     ? users
@@ -325,6 +332,7 @@ export default function TicketDetailPage() {
         status: editForm.status,
         priority: editForm.priority,
         assignedGroup: editForm.assignedGroup.trim(),
+        siteId: editForm.siteId,
         serviceType: editForm.serviceType.trim(),
         slaType: editForm.slaType,
         slaHours: Number(editForm.slaHours),
@@ -495,6 +503,7 @@ export default function TicketDetailPage() {
       <div><dt>Owner</dt><dd>{displayValue(ticket.Owner)}</dd></div>
       <div><dt>Assigned Person</dt><dd>{displayValue(ticket.Assigned_Person)}</dd></div>
       <div><dt>Team</dt><dd>{displayValue(ticket.assignedGroup)}</dd></div>
+      <div><dt>Site ID</dt><dd>{displayValue(ticket.siteId)}</dd></div>
       <div><dt>Company</dt><dd>{displayValue(ticket.company)}</dd></div>
       <div><dt>Service Type</dt><dd>{displayValue(ticket.serviceType)}</dd></div>
       <div><dt>Last Modified</dt><dd>{formatDate(ticket.lastModifiedDate)}</dd></div>
@@ -528,6 +537,20 @@ export default function TicketDetailPage() {
     </dl>
   </div>
 </section>
+
+          <section className="ticket-detail-panel ticket-site-panel">
+            <div className="detail-section-heading">
+              <div>
+                <h2>Infrastructure Site</h2>
+                <p className="detail-muted">
+                  {ticketSite
+                    ? `${ticketSite.siteId} - ${ticketSite.city}, ${ticketSite.country}`
+                    : 'No site location found for this ticket.'}
+                </p>
+              </div>
+            </div>
+            <SiteMap sites={ticketSite ? [ticketSite] : []} ticket={ticket} mode="mini" />
+          </section>
 
 <section className="ticket-detail-notes-row">
 
@@ -679,6 +702,16 @@ export default function TicketDetailPage() {
                 <option value="">Select team</option>
                 {teams.map((team) => (
                   <option key={team.id} value={team.name}>{team.name}</option>
+                ))}
+              </select>
+
+              <label htmlFor="detail-edit-site">Site ID</label>
+              <select id="detail-edit-site" required value={editForm.siteId} onChange={(event) => setEditForm((current) => ({ ...current, siteId: event.target.value }))}>
+                <option value="">Select site</option>
+                {sites.map((site) => (
+                  <option key={site.siteId} value={site.siteId}>
+                    {site.siteId} - {site.city}, {site.country} - {site.infrastructureType}
+                  </option>
                 ))}
               </select>
 

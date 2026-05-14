@@ -9,6 +9,7 @@ const ticketSelect = `
     t.status,
     t.priority,
     t.assigned_group,
+    t.site_id,
     t.team_id,
     team.name AS team_name,
     t.service_type,
@@ -61,6 +62,16 @@ async function resolveTicketTeam({ teamId, assignedGroup }) {
   }
 
   return { teamId: null, assignedGroup: null };
+}
+
+async function ensureSiteExists(siteId) {
+  const result = await query('SELECT site_id FROM infrastructure_sites WHERE site_id = $1', [siteId]);
+
+  if (result.rowCount === 0) {
+    const err = new Error('Selected infrastructure site does not exist.');
+    err.status = 400;
+    throw err;
+  }
 }
 
 async function fetchAllTickets() {
@@ -327,6 +338,7 @@ export async function createTicket(req, res) {
     status,
     priority,
     assignedGroup,
+    siteId,
     teamId,
     serviceType,
     submitDate,
@@ -341,11 +353,12 @@ export async function createTicket(req, res) {
     assignedPersonUserId,
   } = req.body;
 
-  if (!id || !description || !status || !priority || (!assignedGroup && !teamId) || !serviceType || !submitDate) {
+  if (!id || !description || !status || !priority || (!assignedGroup && !teamId) || !siteId || !serviceType || !submitDate) {
     return res.status(400).json({ message: 'Missing required ticket fields.' });
   }
 
   const team = await resolveTicketTeam({ teamId, assignedGroup });
+  await ensureSiteExists(siteId);
 
   const closeDateValue = status === 'Closed' ? getTodayDate() : null;
   const resolvedDateValue = status === 'Resolved' ? getTodayDate() : null;
@@ -362,6 +375,7 @@ export async function createTicket(req, res) {
       status,
       priority,
       assigned_group,
+      site_id,
       team_id,
       service_type,
       submit_date,
@@ -379,13 +393,14 @@ export async function createTicket(req, res) {
       aging,
       owner_user_id,
       assigned_person_user_id
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)`,
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)`,
     [
       id,
       description,
       status,
       priority,
       team.assignedGroup,
+      siteId,
       team.teamId,
       serviceType,
       submitDate,
@@ -462,6 +477,8 @@ export async function updateTicket(req, res) {
 
   const nextStatus = req.body.status || currentTicket.status;
   const nextPriority = req.body.priority || currentTicket.priority;
+  const siteIdValue = req.body.siteId || currentTicket.site_id;
+  await ensureSiteExists(siteIdValue);
   const defaultSla = getDefaultSlaForPriority(nextPriority);
   const slaTypeValue = req.body.slaType || currentTicket.sla_type || defaultSla.slaType;
   const slaHoursValue = Number(req.body.slaHours || currentTicket.sla_hours || defaultSla.slaHours);
@@ -494,22 +511,23 @@ export async function updateTicket(req, res) {
        assigned_group = $4,
        team_id = $5,
       service_type = $6,
-      submit_date = $7,
+      site_id = $7,
+      submit_date = $8,
       last_modified_date = CURRENT_DATE,
-      resolved_date = $8,
-      close_date = $9,
-      company = $10,
-      product_categorization_tier1 = $11,
-      product_categorization_tier2 = $12,
-      product_categorization_tier3 = $13,
-      categorization_tier1 = $14,
-      sla_type = $15,
-      sla_hours = $16,
-      sla_deadline = $17,
-      aging = $18,
-      assigned_person_user_id = $19,
+      resolved_date = $9,
+      close_date = $10,
+      company = $11,
+      product_categorization_tier1 = $12,
+      product_categorization_tier2 = $13,
+      product_categorization_tier3 = $14,
+      categorization_tier1 = $15,
+      sla_type = $16,
+      sla_hours = $17,
+      sla_deadline = $18,
+      aging = $19,
+      assigned_person_user_id = $20,
       updated_at = NOW()
-     WHERE id = $20`,
+     WHERE id = $21`,
     [
       req.body.description,
       req.body.status,
@@ -517,6 +535,7 @@ export async function updateTicket(req, res) {
       team.assignedGroup,
       team.teamId,
       req.body.serviceType,
+      siteIdValue,
       req.body.submitDate,
       resolvedDateValue,
       closeDateValue,
@@ -540,6 +559,7 @@ export async function updateTicket(req, res) {
     { fieldName: 'Priority', oldValue: currentTicket.priority, newValue: req.body.priority },
     { fieldName: 'Team', oldValue: currentTicket.assigned_group, newValue: team.assignedGroup },
     { fieldName: 'Team ID', oldValue: currentTicket.team_id, newValue: team.teamId },
+    { fieldName: 'Site ID', oldValue: currentTicket.site_id, newValue: siteIdValue },
     { fieldName: 'Service Type', oldValue: currentTicket.service_type, newValue: req.body.serviceType },
     { fieldName: 'Submit Date', oldValue: currentTicket.submit_date, newValue: req.body.submitDate },
     { fieldName: 'Resolved Date', oldValue: currentTicket.resolved_date, newValue: resolvedDateValue },

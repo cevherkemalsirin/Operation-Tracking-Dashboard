@@ -9,6 +9,7 @@ import cors from 'cors';
 import express from 'express';
 import adminRoutes from './routes/adminRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import siteRoutes from './routes/siteRoutes.js';
 import teamRoutes from './routes/teamRoutes.js';
 import ticketRoutes from './routes/ticketRoutes.js';
 import userRoutes from './routes/userRoutes.js';
@@ -34,6 +35,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/teams', teamRoutes);
+app.use('/api/sites', siteRoutes);
 app.use('/api/admin', adminRoutes);
 
 // 404 for unmatched routes, then the catch-all error handler. Both must

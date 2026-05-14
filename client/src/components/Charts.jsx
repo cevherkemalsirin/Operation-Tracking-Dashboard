@@ -259,6 +259,7 @@ export function SLAPerformanceChart({ groups }) {
 }
 
 const SERVICE_COLORS = ['#8fb3ff', '#22d3ee', '#22c55e', '#f59e0b', '#ef4444', '#818cf8', '#e879f9', '#14b8a6'];
+const TEAM_COLORS = ['#8fb3ff', '#22c55e', '#ef4444', '#a855f7', '#f59e0b', '#22d3ee', '#e879f9', '#14b8a6', '#f97316', '#84cc16'];
 
 export function ServiceTypeChart({ groups }) {
   const [hovered, setHovered] = useState(null);
@@ -331,6 +332,116 @@ export function ServiceTypeChart({ groups }) {
           <span className="nk-legend-line" />
           <span>Ticket Count</span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+export function TeamPerformanceChart({ groups, teams }) {
+  const [hoveredTeam, setHoveredTeam] = useState(null);
+
+  if (groups.length === 0 || teams.length === 0) {
+    return <div className="nkchart-empty">No team performance data available for this SLA selection.</div>;
+  }
+
+  const W = 820;
+  const H = 340;
+  const padL = 54;
+  const padR = 58;
+  const padT = 40;
+  const padB = 68;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+  const maxValue = Math.max(...groups.flatMap((group) => teams.map((team) => group.values[team] || 0)), 1);
+  const yMax = Math.ceil(maxValue / 5) * 5 || 5;
+  const stepX = groups.length > 1 ? plotW / (groups.length - 1) : 0;
+  const midX = (index) => (groups.length === 1 ? padL + plotW / 2 : padL + index * stepX);
+  const toY = (value) => padT + plotH * (1 - value / yMax);
+  const gridLines = Array.from({ length: 5 }, (_, index) => ({
+    y: toY((index / 4) * yMax),
+    label: Math.round((index / 4) * yMax),
+  }));
+
+  return (
+    <div className="nkchart-wrap team-performance-wrap">
+      <svg viewBox={`0 0 ${W} ${H}`} className="nkchart-svg" aria-label="Team performance by week">
+        {gridLines.map((gl, index) => (
+          <g key={index}>
+            <line x1={padL} y1={gl.y} x2={W - padR} y2={gl.y} stroke="rgba(255,255,255,0.07)" strokeWidth="1" strokeDasharray="3 5" />
+            <text x={padL - 8} y={gl.y + 4} textAnchor="end" fill="#5a6a7a" fontSize="10" style={{ userSelect: 'none' }}>{gl.label}</text>
+          </g>
+        ))}
+
+        {teams.map((team, teamIndex) => {
+          const color = TEAM_COLORS[teamIndex % TEAM_COLORS.length];
+          const isDimmed = hoveredTeam !== null && hoveredTeam !== team;
+          const points = groups.map((group, groupIndex) => ({
+            x: midX(groupIndex),
+            y: toY(group.values[team] || 0),
+            value: group.values[team] || 0,
+          }));
+          const linePath = points.length > 1
+            ? `M ${points.map((point) => `${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' L ')}`
+            : '';
+
+          return (
+            <g
+              key={team}
+              opacity={isDimmed ? 0.2 : 1}
+              onMouseEnter={() => setHoveredTeam(team)}
+              onMouseLeave={() => setHoveredTeam(null)}
+              style={{ cursor: 'pointer' }}
+            >
+              {linePath && <path d={linePath} fill="none" stroke={color} strokeWidth="2.8" strokeLinejoin="round" strokeLinecap="round" />}
+              {points.map((point, pointIndex) => (
+                <g key={`${team}-${groups[pointIndex].label}`}>
+                  <circle cx={point.x} cy={point.y} r={point.value > 0 ? 4.5 : 2.5} fill={point.value > 0 ? color : 'rgba(255,255,255,0.18)'} stroke="rgba(10,21,41,0.9)" strokeWidth="2" />
+                  {point.value > 0 && (
+                    <text
+                      x={point.x}
+                      y={point.y - 10}
+                      textAnchor="middle"
+                      fill={color}
+                      fontSize="9"
+                      fontWeight="900"
+                      style={{ userSelect: 'none' }}
+                    >
+                      {point.value}
+                    </text>
+                  )}
+                </g>
+              ))}
+            </g>
+          );
+        })}
+
+        {groups.map((group, index) => {
+          const [week, year] = group.label.split('\n');
+          return (
+            <g key={group.label}>
+              <text x={midX(index)} y={H - padB + 18} textAnchor="middle" fill="#5a6a7a" fontSize="10" style={{ userSelect: 'none' }}>{week}</text>
+              {year && <text x={midX(index)} y={H - padB + 30} textAnchor="middle" fill="#3d4d5e" fontSize="9" style={{ userSelect: 'none' }}>{year}</text>}
+            </g>
+          );
+        })}
+
+        <line x1={padL} y1={padT} x2={padL} y2={H - padB} stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+        <line x1={padL} y1={H - padB} x2={W - padR} y2={H - padB} stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+        <text x={padL} y={padT - 14} textAnchor="start" fill="#22c55e" fontSize="10" fontWeight="800" style={{ userSelect: 'none' }}>Number of tickets</text>
+      </svg>
+
+      <div className="nkchart-legend team-performance-legend">
+        {teams.map((team, index) => (
+          <div
+            key={team}
+            className="nk-legend-item"
+            onMouseEnter={() => setHoveredTeam(team)}
+            onMouseLeave={() => setHoveredTeam(null)}
+          >
+            <span className="nk-legend-swatch" style={{ background: TEAM_COLORS[index % TEAM_COLORS.length] }} />
+            <span>{team}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { AUTH_ROLES, useAuth } from '../auth';
 import { createTicket, deleteTicket, fetchTickets, updateTicket } from '../utils/tickets';
 import { fetchUsers } from '../utils/users';
 import { fetchTeams } from '../utils/teams';
+import { fetchSites } from '../utils/sites';
 import PaginationButtons from '../components/PaginationButtons';
 
 const TICKETS_PER_PAGE = 6;
@@ -64,6 +65,7 @@ function isCompletedTicket(ticket) {
 
 function matchesSlaFilter(ticket, slaFilter) {
   if (!slaFilter) return true;
+  if (slaFilter === 'completed') return isCompletedTicket(ticket);
   if (isCompletedTicket(ticket)) return false;
 
   if (slaFilter === 'overdue') return ticket.slaUrgency === 'overdue';
@@ -118,6 +120,7 @@ function buildDefaultForm() {
     status: 'Open',
     priority: 'Medium',
     assignedGroup: 'Service Desk',
+    siteId: '',
     serviceType: 'Application',
     slaType: defaultSla.slaType,
     slaHours: String(defaultSla.slaHours),
@@ -135,6 +138,7 @@ export default function TicketManagementPage() {
   const [allTickets, setAllTickets] = useState([]);
   const [users, setUsers] = useState([]);
   const [teams, setTeams] = useState([]);
+  const [sites, setSites] = useState([]);
   const [activeTab, setActiveTab] = useState('my');
   const [filters, setFilters] = useState({ search: '', status: '', priority: '', sla: '' });
   const [currentPage, setCurrentPage] = useState(1);
@@ -149,19 +153,22 @@ export default function TicketManagementPage() {
     async function loadData() {
       try {
         setError('');
-        const [ticketData, userData, teamData] = await Promise.all([
+        const [ticketData, userData, teamData, siteData] = await Promise.all([
           fetchTickets(),
           fetchUsers(),
           fetchTeams(),
+          fetchSites(),
         ]);
         setAllTickets(ticketData);
         setUsers(userData);
         setTeams(teamData);
+        setSites(siteData);
       } catch (err) {
         setError('Failed to load ticket data from the backend API.');
         setAllTickets([]);
         setUsers([]);
         setTeams([]);
+        setSites([]);
       }
     }
 
@@ -202,6 +209,7 @@ export default function TicketManagementPage() {
         ticket.description.toLowerCase().includes(searchTerm) ||
         ticket.Owner.toLowerCase().includes(searchTerm) ||
         ticket.Assigned_Person.toLowerCase().includes(searchTerm) ||
+        String(ticket.siteId || '').toLowerCase().includes(searchTerm) ||
         ticket.serviceType.toLowerCase().includes(searchTerm);
       const matchesStatus = !filters.status || ticket.status === filters.status;
       const matchesPriority = !filters.priority || ticket.priority === filters.priority;
@@ -234,7 +242,7 @@ export default function TicketManagementPage() {
 
   function openCreateModal() {
     setSelectedTicket(null);
-    setFormData(buildDefaultForm());
+    setFormData({ ...buildDefaultForm(), siteId: sites[0]?.siteId || '' });
     setModalMode('create');
   }
 
@@ -245,6 +253,7 @@ export default function TicketManagementPage() {
       status: ticket.status,
       priority: ticket.priority,
       assignedGroup: ticket.assignedGroup,
+      siteId: ticket.siteId || '',
       serviceType: ticket.serviceType,
       slaType: ticket.slaType || getDefaultSlaForPriority(ticket.priority).slaType,
       slaHours: String(ticket.slaHours || getDefaultSlaForPriority(ticket.priority).slaHours),
@@ -316,6 +325,7 @@ export default function TicketManagementPage() {
           status: formData.status,
           priority: formData.priority,
           assignedGroup: formData.assignedGroup.trim(),
+          siteId: formData.siteId,
           serviceType: formData.serviceType.trim(),
           slaType: formData.slaType,
           slaHours: Number(formData.slaHours),
@@ -340,6 +350,7 @@ export default function TicketManagementPage() {
           status: formData.status,
           priority: formData.priority,
           assignedGroup: formData.assignedGroup.trim(),
+          siteId: formData.siteId,
           serviceType: formData.serviceType.trim(),
           slaType: formData.slaType,
           slaHours: Number(formData.slaHours),
@@ -454,6 +465,7 @@ export default function TicketManagementPage() {
               </select>
               <select value={filters.sla} onChange={(e) => updateFilter('sla', e.target.value)} aria-label="SLA filter">
                 <option value="">All SLA</option>
+                <option value="completed">Completed</option>
                 <option value="overdue">Overdue</option>
                 <option value="urgent">Urgent</option>
                 <option value="warning">Warning</option>
@@ -497,7 +509,8 @@ export default function TicketManagementPage() {
                     <dl className="ticket-properties">
                       <div><dt>Owner</dt><dd>{ticket.Owner}</dd></div>
                       <div><dt>Assigned</dt><dd>{ticket.Assigned_Person}</dd></div>
-                        <div><dt>Team</dt><dd>{ticket.assignedGroup}</dd></div>
+                      <div><dt>Team</dt><dd>{ticket.assignedGroup}</dd></div>
+                      <div><dt>Site ID</dt><dd>{ticket.siteId || '-'}</dd></div>
                       <div><dt>Company</dt><dd>{ticket.company || '-'}</dd></div>
                       <div><dt>Submitted</dt><dd>{formatDate(ticket.submitDate)}</dd></div>
                       <div><dt>Last Modified</dt><dd>{formatDate(ticket.lastModifiedDate)}</dd></div>
@@ -583,7 +596,7 @@ export default function TicketManagementPage() {
                   <option value="Low">Low</option>
                 </select>
 
-            <label htmlFor="ticket-group">Team</label>
+                <label htmlFor="ticket-group">Team</label>
                 <select
                   id="ticket-group"
                   required
@@ -595,6 +608,21 @@ export default function TicketManagementPage() {
                   )}
                   {teams.map((team) => (
                     <option key={team.id} value={team.name}>{team.name}</option>
+                  ))}
+                </select>
+
+                <label htmlFor="ticket-site">Site ID</label>
+                <select
+                  id="ticket-site"
+                  required
+                  value={formData.siteId}
+                  onChange={(e) => setFormData((current) => ({ ...current, siteId: e.target.value }))}
+                >
+                  <option value="">Select site</option>
+                  {sites.map((site) => (
+                    <option key={site.siteId} value={site.siteId}>
+                      {site.siteId} - {site.city}, {site.country} - {site.infrastructureType}
+                    </option>
                   ))}
                 </select>
 

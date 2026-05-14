@@ -49,6 +49,46 @@ const demoTeamMemberships = {
   sara:   ['Service Desk', 'Field Support'],
 };
 
+const infrastructureSites = [
+  ['EU-RO-TM-001', 'Romania', 'RO', 'Timisoara', 'TM', 45.7489, 21.2087, '5G Macro Tower', 'Active', 'Urban macro site covering central Timisoara'],
+  ['EU-RO-TM-002', 'Romania', 'RO', 'Timisoara', 'TM', 45.7640, 21.2285, 'Edge Router Hub', 'Maintenance', 'Regional transport aggregation point'],
+  ['EU-RO-CJ-001', 'Romania', 'RO', 'Cluj', 'CJ', 46.7712, 23.6236, '5G Rooftop Antenna', 'Active', 'Rooftop radio site near Cluj business district'],
+  ['EU-RO-CJ-002', 'Romania', 'RO', 'Cluj', 'CJ', 46.7550, 23.5890, 'Core Switch Site', 'Active', 'Metro switching equipment location'],
+  ['EU-RO-BU-001', 'Romania', 'RO', 'Bucharest', 'BU', 44.4268, 26.1025, '5G Macro Tower', 'Active', 'Capital city macro radio site'],
+  ['EU-RO-BU-002', 'Romania', 'RO', 'Bucharest', 'BU', 44.4500, 26.0900, 'Aggregation Hub', 'Maintenance', 'High-capacity metro aggregation node'],
+  ['EU-RO-BU-003', 'Romania', 'RO', 'Bucharest', 'BU', 44.4100, 26.1350, '5G Small Cell Cluster', 'Active', 'Dense urban small cell deployment'],
+  ['EU-DE-BE-001', 'Germany', 'DE', 'Berlin', 'BE', 52.5200, 13.4050, '5G Macro Tower', 'Active', 'Berlin central macro coverage site'],
+  ['EU-DE-BE-002', 'Germany', 'DE', 'Berlin', 'BE', 52.5000, 13.3500, 'Fiber Backhaul Node', 'Active', 'Backhaul transport node'],
+  ['EU-DE-MU-001', 'Germany', 'DE', 'Munich', 'MU', 48.1351, 11.5820, '5G Rooftop Antenna', 'Maintenance', 'Munich business district rooftop site'],
+  ['EU-DE-HA-001', 'Germany', 'DE', 'Hamburg', 'HA', 53.5511, 9.9937, 'Edge Router Hub', 'Active', 'Northern regional edge hub'],
+  ['EU-FR-PA-001', 'France', 'FR', 'Paris', 'PA', 48.8566, 2.3522, '5G Macro Tower', 'Active', 'Paris central radio site'],
+  ['EU-FR-PA-002', 'France', 'FR', 'Paris', 'PA', 48.8800, 2.3300, 'Core Switch Site', 'Active', 'Paris metro switching site'],
+  ['EU-FR-LY-001', 'France', 'FR', 'Lyon', 'LY', 45.7640, 4.8357, '5G Rooftop Antenna', 'Maintenance', 'Lyon rooftop radio site'],
+  ['EU-FR-MA-001', 'France', 'FR', 'Marseille', 'MA', 43.2965, 5.3698, 'Aggregation Hub', 'Active', 'Mediterranean aggregation location'],
+  ['EU-IT-RM-001', 'Italy', 'IT', 'Rome', 'RM', 41.9028, 12.4964, '5G Macro Tower', 'Active', 'Rome central macro site'],
+  ['EU-IT-MI-001', 'Italy', 'IT', 'Milan', 'MI', 45.4642, 9.1900, 'Edge Router Hub', 'Active', 'Milan edge routing point'],
+  ['EU-IT-MI-002', 'Italy', 'IT', 'Milan', 'MI', 45.4800, 9.2100, '5G Small Cell Cluster', 'Maintenance', 'Dense city center small cell cluster'],
+  ['EU-IT-NA-001', 'Italy', 'IT', 'Naples', 'NA', 40.8518, 14.2681, 'Fiber Backhaul Node', 'Active', 'Naples transport backhaul site'],
+  ['EU-ES-MA-001', 'Spain', 'ES', 'Madrid', 'MA', 40.4168, -3.7038, '5G Macro Tower', 'Active', 'Madrid macro radio site'],
+  ['EU-ES-BC-001', 'Spain', 'ES', 'Barcelona', 'BC', 41.3874, 2.1686, '5G Rooftop Antenna', 'Maintenance', 'Barcelona rooftop radio location'],
+  ['EU-ES-BC-002', 'Spain', 'ES', 'Barcelona', 'BC', 41.4050, 2.1900, 'Aggregation Hub', 'Active', 'Barcelona metro aggregation site'],
+  ['EU-ES-VA-001', 'Spain', 'ES', 'Valencia', 'VA', 39.4699, -0.3763, 'Edge Router Hub', 'Active', 'Valencia regional edge site'],
+  ['EU-NL-AM-001', 'Netherlands', 'NL', 'Amsterdam', 'AM', 52.3676, 4.9041, 'Core Switch Site', 'Active', 'Amsterdam core switching location'],
+  ['EU-NL-RT-001', 'Netherlands', 'NL', 'Rotterdam', 'RT', 51.9244, 4.4777, '5G Macro Tower', 'Active', 'Rotterdam macro radio site'],
+  ['EU-NL-EH-001', 'Netherlands', 'NL', 'Eindhoven', 'EH', 51.4416, 5.4697, 'Fiber Backhaul Node', 'Maintenance', 'Eindhoven backhaul node'],
+  ['EU-BE-BR-001', 'Belgium', 'BE', 'Brussels', 'BR', 50.8503, 4.3517, '5G Macro Tower', 'Active', 'Brussels central macro coverage'],
+  ['EU-BE-AN-001', 'Belgium', 'BE', 'Antwerp', 'AN', 51.2194, 4.4025, 'Edge Router Hub', 'Active', 'Antwerp edge routing site'],
+  ['EU-BE-GH-001', 'Belgium', 'BE', 'Ghent', 'GH', 51.0543, 3.7174, '5G Rooftop Antenna', 'Maintenance', 'Ghent rooftop antenna site'],
+  ['EU-PL-WA-001', 'Poland', 'PL', 'Warsaw', 'WA', 52.2297, 21.0122, '5G Macro Tower', 'Active', 'Warsaw macro radio site'],
+  ['EU-PL-WA-002', 'Poland', 'PL', 'Warsaw', 'WA', 52.2500, 21.0300, 'Aggregation Hub', 'Active', 'Warsaw aggregation node'],
+  ['EU-PL-KR-001', 'Poland', 'PL', 'Krakow', 'KR', 50.0647, 19.9450, '5G Rooftop Antenna', 'Maintenance', 'Krakow rooftop coverage site'],
+  ['EU-PL-GD-001', 'Poland', 'PL', 'Gdansk', 'GD', 54.3520, 18.6466, 'Fiber Backhaul Node', 'Active', 'Gdansk backhaul transport site'],
+  ['EU-UK-LO-001', 'United Kingdom', 'UK', 'London', 'LO', 51.5072, -0.1276, '5G Macro Tower', 'Active', 'London macro radio location'],
+  ['EU-UK-LO-002', 'United Kingdom', 'UK', 'London', 'LO', 51.5200, -0.1000, 'Core Switch Site', 'Active', 'London core switching site'],
+  ['EU-UK-MA-001', 'United Kingdom', 'UK', 'Manchester', 'MA', 53.4808, -2.2426, 'Edge Router Hub', 'Maintenance', 'Manchester edge router site'],
+  ['EU-UK-BI-001', 'United Kingdom', 'UK', 'Birmingham', 'BI', 52.4862, -1.8904, '5G Rooftop Antenna', 'Active', 'Birmingham rooftop radio site'],
+];
+
 const baseTicketTemplates = [
   ['Email delivery delayed for finance department', 'Open', 'High', 'Messaging Support', 'Email', 'Nokia', 'Infrastructure', 'Messaging', 'Exchange', 'Incident', 'cevher', 'vlad', '2026-05-10T08:30:00+03:00'],
   ['VPN connection drops for remote sales employee', 'In Progress', 'Medium', 'Network Team', 'Access', 'Nokia', 'Network', 'Remote Access', 'VPN', 'Connectivity', 'vlad', 'cevher', '2026-05-09T14:00:00+03:00'],
@@ -271,7 +311,30 @@ async function insertTeamMemberships(userIdByKey, teamIdByName) {
   }
 }
 
+async function insertInfrastructureSites() {
+  for (const site of infrastructureSites) {
+    await query(
+      `INSERT INTO infrastructure_sites (
+        site_id,
+        country,
+        country_code,
+        city,
+        city_code,
+        latitude,
+        longitude,
+        infrastructure_type,
+        vendor,
+        status,
+        description
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'Nokia',$9,$10)`,
+      site
+    );
+  }
+}
+
 async function insertTickets(userIdByKey, teamIdByName) {
+  const siteIds = infrastructureSites.map((site) => site[0]);
+
   for (const [index, template] of ticketTemplates.entries()) {
     const [
       description,
@@ -299,6 +362,7 @@ async function insertTickets(userIdByKey, teamIdByName) {
     const ownerUserId = userIdByKey[ownerKey];
     const assignedUserId = userIdByKey[assignedKey];
     const teamId = teamIdByName[assignedGroup] ?? null;
+    const siteId = siteIds[index % siteIds.length];
 
     await query(
       `INSERT INTO tickets (
@@ -307,6 +371,7 @@ async function insertTickets(userIdByKey, teamIdByName) {
         status,
         priority,
         assigned_group,
+        site_id,
         team_id,
         service_type,
         submit_date,
@@ -326,13 +391,14 @@ async function insertTickets(userIdByKey, teamIdByName) {
         assigned_person_user_id,
         created_at,
         updated_at
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)`,
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)`,
       [
         ticketId,
         description,
         status,
         priority,
         assignedGroup,
+        siteId,
         teamId,
         serviceType,
         getDateOnly(submitDate),
@@ -382,15 +448,16 @@ async function run() {
   // Reset the data tables. CASCADE clears child rows in ticket_history /
   // ticket_comments / team_members, RESTART IDENTITY resets the SERIAL
   // counters so demo IDs stay predictable between runs.
-  await query('TRUNCATE TABLE tickets, team_members, teams, users RESTART IDENTITY CASCADE;');
+  await query('TRUNCATE TABLE tickets, infrastructure_sites, team_members, teams, users RESTART IDENTITY CASCADE;');
 
   const userIdByKey = await insertUsers();
   const teamIdByName = await insertTeams();
   await insertTeamMemberships(userIdByKey, teamIdByName);
+  await insertInfrastructureSites();
   await insertTickets(userIdByKey, teamIdByName);
 
   console.log('Database seeded successfully.');
-  console.log(`Created ${demoUsers.length} users, ${demoTeams.length} teams, and ${ticketTemplates.length} tickets.`);
+  console.log(`Created ${demoUsers.length} users, ${demoTeams.length} teams, ${infrastructureSites.length} sites, and ${ticketTemplates.length} tickets.`);
   console.log('Demo logins:');
   for (const demoUser of demoUsers) {
     console.log(`- ${demoUser.email} / ${demoUser.password} (${demoUser.role})`);

@@ -19,7 +19,7 @@ const DEFAULT_FILTERS = {
 
 const STATUS_OPTIONS = ['Open', 'In Progress', 'Pending', 'Resolved', 'Closed'];
 const PRIORITY_OPTIONS = ['Critical', 'High', 'Medium', 'Low'];
-const SLA_OPTIONS = ['Overdue', 'Urgent', 'Warning', 'Normal'];
+const SLA_OPTIONS = ['Completed', 'Overdue', 'Urgent', 'Warning', 'Normal'];
 const FILTER_CHIP_LABELS = {
   status: 'Status',
   priority: 'Priority',
@@ -55,6 +55,7 @@ function isCompletedTicket(ticket) {
 }
 
 function matchesSlaFilter(ticket, slaFilter) {
+  if (slaFilter === 'Completed') return isCompletedTicket(ticket);
   if (isCompletedTicket(ticket)) return false;
 
   if (slaFilter === 'Overdue') return ticket.slaUrgency === 'overdue';
@@ -155,6 +156,7 @@ export default function DashboardPage() {
       const searchValue = filters.search.toLowerCase().trim();
       const matchesSearch =
         ticket.id.toLowerCase().includes(searchValue) ||
+        String(ticket.siteId || '').toLowerCase().includes(searchValue) ||
         ticket.description.toLowerCase().includes(searchValue);
       const matchesStatus = matchesSelectedValues(ticket.status, filters.status);
       const matchesPriority = matchesSelectedValues(ticket.priority, filters.priority);
@@ -333,6 +335,7 @@ export default function DashboardPage() {
                 <thead>
                   <tr>
                     <th>Incident</th>
+                    <th>Site ID</th>
                     <th>Description</th>
                     <th>SLA Remaining</th>
                     <th>Status</th>
@@ -357,6 +360,7 @@ export default function DashboardPage() {
                   {visibleTickets.map((ticket) => (
                     <tr className={getTicketRowClass(ticket)} key={ticket.id}>
                       <td className="ticket-id"><Link className="ticket-detail-link" to={`/tickets/${encodeURIComponent(ticket.id)}`}>{ticket.id}</Link></td>
+                      <td>{displayValue(ticket.siteId)}</td>
                       <td className="description-cell">{ticket.description}</td>
                       <td><span className={`sla-badge sla-${ticket.slaUrgency || 'none'}`}>{displayValue(ticket.slaRemainingLabel)}</span></td>
                       <td><span className={`status-badge ${getStatusClass(ticket.status)}`}>{ticket.status}</span></td>

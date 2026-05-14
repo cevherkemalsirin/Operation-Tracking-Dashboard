@@ -246,6 +246,101 @@
   padding-bottom: 8px;
 }
 
+.statistics-map-filters,
+.statistics-team-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.statistics-map-filters label,
+.statistics-team-filters label {
+  display: grid;
+  gap: 8px;
+  min-width: min(100%, 220px);
+  color: #e7eefc;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.statistics-map-filters select,
+.statistics-team-filters select {
+  min-height: 42px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 9px 12px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+.statistics-map-filters select:focus,
+.statistics-team-filters select:focus {
+  border-color: #8fb3ff;
+  box-shadow: 0 0 0 3px rgba(143, 179, 255, 0.2);
+}
+
+.statistics-map-filters option,
+.statistics-team-filters option {
+  color: #101010;
+}
+
+.statistics-map-filter-actions {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  margin-left: auto;
+  color: #c9cac4;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.statistics-map-filter-actions button {
+  min-height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+}
+
+.statistics-map-filter-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.statistics-filter-chips {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.statistics-map-summary {
+  margin: 0 0 12px;
+  color: #c9cac4;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.team-performance-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px;
+  align-items: center;
+  gap: 18px;
+}
+
+.team-performance-wrap .nkchart-svg {
+  width: 100%;
+}
+
+.team-performance-legend {
+  flex-direction: column;
+  gap: 14px;
+  padding: 8px 0;
+}
+
 /* Override the shared nkchart-svg to enforce a taller minimum on this page */
 .statistics-chart-body .nkchart-svg {
   min-height: 420px;
@@ -316,5 +411,13 @@
 
   .statistics-chart-body .nkchart-svg {
     min-height: 260px;
+  }
+
+  .team-performance-wrap {
+    grid-template-columns: 1fr;
+  }
+
+  .team-performance-legend {
+    flex-direction: row;
   }
 }
