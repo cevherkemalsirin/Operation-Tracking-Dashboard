@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useParams } from 'react-router-dom';
 import '../styles/dashboard.css';
 import '../styles/ticket-detail.css';
@@ -9,7 +9,10 @@ import {
   fetchTicket,
   fetchTicketComments,
   fetchTicketHistory,
+  updateTicket,
 } from '../utils/tickets';
+import { fetchUsers } from '../utils/users';
+import { fetchTeams } from '../utils/teams';
 
 function displayValue(value) {
   return value || '-';
@@ -50,6 +53,62 @@ function getPriorityClass(priority) {
   return 'dot-low';
 }
 
+function normalizeValue(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function getUserKeys(user) {
+  if (!user) return [];
+  const email = normalizeValue(user.email);
+  const emailName = email.includes('@') ? email.split('@')[0] : email;
+
+  return Array.from(new Set([
+    normalizeValue(user.name),
+    email,
+    emailName,
+    normalizeValue(user.id),
+  ].filter(Boolean)));
+}
+
+function matchesCurrentUser(value, user) {
+  const normalizedValue = normalizeValue(value);
+  return getUserKeys(user).some((key) => key === normalizedValue);
+}
+
+function calculateAging(submitDate) {
+  const submitted = new Date(submitDate);
+  if (Number.isNaN(submitted.getTime())) return 0;
+  const diffMs = Date.now() - submitted.getTime();
+  return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+}
+
+function getDefaultSlaForPriority(priority) {
+  if (priority === 'Critical') return { slaType: 'normal', slaHours: 4 };
+  if (priority === 'High') return { slaType: 'normal', slaHours: 8 };
+  if (priority === 'Medium') return { slaType: 'business', slaHours: 24 };
+  return { slaType: 'business', slaHours: 72 };
+}
+
+function buildEditForm(ticket) {
+  const defaultSla = getDefaultSlaForPriority(ticket.priority);
+
+  return {
+    description: ticket.description || '',
+    status: ticket.status || 'Open',
+    priority: ticket.priority || 'Medium',
+    assignedGroup: ticket.assignedGroup || '',
+    serviceType: ticket.serviceType || '',
+    slaType: ticket.slaType || defaultSla.slaType,
+    slaHours: String(ticket.slaHours || defaultSla.slaHours),
+    company: ticket.company || '',
+    productCategorizationTier1: ticket.productCategorizationTier1 || '',
+    productCategorizationTier2: ticket.productCategorizationTier2 || '',
+    productCategorizationTier3: ticket.productCategorizationTier3 || '',
+    categorizationTier1: ticket.categorizationTier1 || '',
+    assignedPersonUserId: ticket.assignedPersonUserId ? String(ticket.assignedPersonUserId) : '',
+  };
+}
+
 function getHistoryText(entry) {
   if (entry.action === 'created') {
     return `Created ticket ${entry.newValue || entry.ticketId}`;
@@ -70,17 +129,88 @@ function getHistoryText(entry) {
   return entry.action;
 }
 
+function getMentionTrigger(value, caretIndex) {
+  const textBeforeCaret = value.slice(0, caretIndex);
+  return textBeforeCaret.match(/(?:^|\s)@([\w.-]*)$/);
+}
+
+function getCaretPosition(textarea, wrapper) {
+  const textareaRect = textarea.getBoundingClientRect();
+  const wrapperRect = wrapper.getBoundingClientRect();
+  const style = window.getComputedStyle(textarea);
+  const mirror = document.createElement('div');
+  const marker = document.createElement('span');
+
+  const properties = [
+    'boxSizing',
+    'width',
+    'fontFamily',
+    'fontSize',
+    'fontWeight',
+    'lineHeight',
+    'letterSpacing',
+    'paddingTop',
+    'paddingRight',
+    'paddingBottom',
+    'paddingLeft',
+    'borderTopWidth',
+    'borderRightWidth',
+    'borderBottomWidth',
+    'borderLeftWidth',
+    'whiteSpace',
+    'wordWrap',
+  ];
+
+  mirror.style.position = 'absolute';
+  mirror.style.visibility = 'hidden';
+  mirror.style.left = `${textareaRect.left}px`;
+  mirror.style.top = `${textareaRect.top}px`;
+  mirror.style.height = 'auto';
+  mirror.style.whiteSpace = 'pre-wrap';
+  mirror.style.wordBreak = 'break-word';
+  mirror.style.overflowWrap = 'break-word';
+
+  properties.forEach((property) => {
+    mirror.style[property] = style[property];
+  });
+
+  mirror.textContent = textarea.value.slice(0, textarea.selectionStart);
+  marker.textContent = textarea.value.slice(textarea.selectionStart) || '.';
+  mirror.appendChild(marker);
+  document.body.appendChild(mirror);
+
+  const markerRect = marker.getBoundingClientRect();
+  const position = {
+    left: Math.min(Math.max(12, markerRect.left - wrapperRect.left), wrapperRect.width - 260),
+    top: markerRect.top - wrapperRect.top + 24,
+  };
+
+  document.body.removeChild(mirror);
+  return position;
+}
+
 export default function TicketDetailPage() {
   const { id } = useParams();
   const { role, user } = useAuth();
   const [ticket, setTicket] = useState(null);
   const [history, setHistory] = useState([]);
   const [comments, setComments] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [teams, setTeams] = useState([]);
   const [commentText, setCommentText] = useState('');
+  const [mentionedUsers, setMentionedUsers] = useState([]);
+  const [mentionSearch, setMentionSearch] = useState(null);
+  const [mentionPickerPosition, setMentionPickerPosition] = useState({ left: 12, top: 48 });
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState(null);
+  const [editError, setEditError] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
   const [error, setError] = useState('');
   const [commentError, setCommentError] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
   const [deletingCommentId, setDeletingCommentId] = useState(null);
+  const textareaRef = useRef(null);
+  const commentInputWrapRef = useRef(null);
 
   const canComment = role === AUTH_ROLES.ADMIN || role === AUTH_ROLES.OPERATOR;
 
@@ -107,6 +237,160 @@ export default function TicketDetailPage() {
     loadTicketDetail();
   }, [id]);
 
+  useEffect(() => {
+    async function loadSupportData() {
+      try {
+        const [userData, teamData] = await Promise.all([fetchUsers(), fetchTeams()]);
+        setUsers(userData);
+        setTeams(teamData);
+      } catch (err) {
+        setUsers([]);
+        setTeams([]);
+      }
+    }
+
+    loadSupportData();
+  }, []);
+
+  const canEditTicket = ticket && (
+    role === AUTH_ROLES.ADMIN ||
+    (role === AUTH_ROLES.OPERATOR && matchesCurrentUser(ticket.Owner, user))
+  );
+  const assignableUsers = users.map((availableUser) => ({
+    id: String(availableUser.id),
+    name: availableUser.name,
+  }));
+
+  const mentionSuggestions = mentionSearch !== null
+    ? users
+      .filter((candidate) => !mentionedUsers.some((mentioned) => mentioned.id === candidate.id))
+      .filter((candidate) => {
+        const name = candidate.name.toLowerCase();
+        const email = candidate.email.toLowerCase();
+        return !mentionSearch || name.includes(mentionSearch) || email.includes(mentionSearch);
+      })
+      .slice(0, 6)
+    : [];
+
+  function updateMentionPicker(textarea, nextValue = textarea.value) {
+    const trigger = getMentionTrigger(nextValue, textarea.selectionStart);
+
+    if (!trigger) {
+      setMentionSearch(null);
+      return;
+    }
+
+    setMentionSearch(trigger[1].trim().toLowerCase());
+    if (commentInputWrapRef.current) {
+      setMentionPickerPosition(getCaretPosition(textarea, commentInputWrapRef.current));
+    }
+  }
+
+  function handleCommentTextChange(event) {
+    const nextValue = event.target.value;
+    setCommentText(nextValue);
+    updateMentionPicker(event.target, nextValue);
+  }
+
+  function handleCommentCursorMove(event) {
+    updateMentionPicker(event.target);
+  }
+
+  function addMention(userToMention) {
+    const textarea = textareaRef.current;
+    const caretIndex = textarea?.selectionStart ?? commentText.length;
+    const trigger = getMentionTrigger(commentText, caretIndex);
+
+    setMentionedUsers((current) => (
+      current.some((mentioned) => mentioned.id === userToMention.id)
+        ? current
+        : [...current, userToMention]
+    ));
+
+    if (!trigger || !textarea) {
+      setCommentText((current) => `${current}@${userToMention.name} `);
+      setMentionSearch(null);
+      return;
+    }
+
+    const triggerStart = caretIndex - trigger[0].length;
+    const prefix = trigger[0].startsWith(' ') ? ' ' : '';
+    const nextValue = `${commentText.slice(0, triggerStart)}${prefix}@${userToMention.name} ${commentText.slice(caretIndex)}`;
+    const nextCaret = triggerStart + prefix.length + userToMention.name.length + 2;
+
+    setCommentText(nextValue);
+    setMentionSearch(null);
+
+    requestAnimationFrame(() => {
+      textarea.focus();
+      textarea.setSelectionRange(nextCaret, nextCaret);
+    });
+  }
+
+  function removeMention(userId) {
+    setMentionedUsers((current) => current.filter((mentioned) => mentioned.id !== userId));
+  }
+
+  function openEditTicketModal() {
+    setEditForm(buildEditForm(ticket));
+    setEditError('');
+    setEditOpen(true);
+  }
+
+  function closeEditTicketModal() {
+    setEditOpen(false);
+    setEditForm(null);
+    setSavingEdit(false);
+    setEditError('');
+  }
+
+  function handleEditPriorityChange(priority) {
+    const defaultSla = getDefaultSlaForPriority(priority);
+    setEditForm((current) => ({
+      ...current,
+      priority,
+      slaType: defaultSla.slaType,
+      slaHours: String(defaultSla.slaHours),
+    }));
+  }
+
+  async function handleEditTicketSubmit(event) {
+    event.preventDefault();
+    if (!canEditTicket || !editForm || savingEdit) return;
+
+    try {
+      setSavingEdit(true);
+      setEditError('');
+      await updateTicket({
+        ...ticket,
+        description: editForm.description.trim(),
+        status: editForm.status,
+        priority: editForm.priority,
+        assignedGroup: editForm.assignedGroup.trim(),
+        serviceType: editForm.serviceType.trim(),
+        slaType: editForm.slaType,
+        slaHours: Number(editForm.slaHours),
+        company: editForm.company.trim(),
+        productCategorizationTier1: editForm.productCategorizationTier1.trim(),
+        productCategorizationTier2: editForm.productCategorizationTier2.trim(),
+        productCategorizationTier3: editForm.productCategorizationTier3.trim(),
+        categorizationTier1: editForm.categorizationTier1.trim(),
+        assignedPersonUserId: editForm.assignedPersonUserId ? Number(editForm.assignedPersonUserId) : null,
+        aging: calculateAging(ticket.submitDate),
+      });
+      const [updatedTicket, updatedHistory] = await Promise.all([
+        fetchTicket(id),
+        fetchTicketHistory(id),
+      ]);
+      setTicket(updatedTicket);
+      setHistory(updatedHistory);
+      closeEditTicketModal();
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : 'Ticket update failed.');
+      setSavingEdit(false);
+    }
+  }
+
   async function handleCommentSubmit(event) {
     event.preventDefault();
     const trimmedComment = commentText.trim();
@@ -115,11 +399,17 @@ export default function TicketDetailPage() {
     try {
       setSubmittingComment(true);
       setCommentError('');
-      const updatedComments = await addTicketComment(id, trimmedComment);
+      const updatedComments = await addTicketComment(
+        id,
+        trimmedComment,
+        mentionedUsers.map((mentioned) => mentioned.id)
+      );
       const updatedHistory = await fetchTicketHistory(id);
       setComments(updatedComments);
       setHistory(updatedHistory);
       setCommentText('');
+      setMentionedUsers([]);
+      setMentionSearch(null);
     } catch (err) {
       setCommentError(err instanceof Error ? err.message : 'Failed to add comment.');
     } finally {
@@ -205,10 +495,29 @@ export default function TicketDetailPage() {
                 <span className={`priority-dot ${getPriorityClass(ticket.priority)}`}></span>
                 {ticket.priority}
               </span>
+              {canEditTicket && (
+                <button type="button" className="detail-edit-button" onClick={openEditTicketModal}>
+                  Edit Ticket
+                </button>
+              )}
             </div>
           </section>
 
           <section className="ticket-detail-grid">
+            <div className="ticket-detail-panel ownership-panel">
+              <div className="detail-section-heading">
+                <h2>Ownership</h2>
+              </div>
+              <dl className="detail-definition-grid">
+                <div><dt>Owner</dt><dd>{displayValue(ticket.Owner)}</dd></div>
+                <div><dt>Assigned Person</dt><dd>{displayValue(ticket.Assigned_Person)}</dd></div>
+                <div><dt>Assigned Group</dt><dd>{displayValue(ticket.assignedGroup)}</dd></div>
+                <div><dt>Company</dt><dd>{displayValue(ticket.company)}</dd></div>
+                <div><dt>Service Type</dt><dd>{displayValue(ticket.serviceType)}</dd></div>
+                <div><dt>Last Modified</dt><dd>{formatDate(ticket.lastModifiedDate)}</dd></div>
+              </dl>
+            </div>
+
             <div className="ticket-detail-panel sla-panel">
               <div className="detail-section-heading">
                 <h2>SLA</h2>
@@ -247,21 +556,47 @@ export default function TicketDetailPage() {
           <section className="ticket-detail-notes-row">
             <div className="ticket-detail-panel work-notes-panel">
               <div className="detail-section-heading">
-                <h2>Work Notes</h2>
+                <h2 className="ticket-report-heading">Ticket Requests / Reports</h2>
               </div>
 
               {canComment && (
                 <form className="comment-form" onSubmit={handleCommentSubmit}>
-                  <label htmlFor="ticket-comment">Add work note</label>
-                  <textarea
-                    id="ticket-comment"
-                    value={commentText}
-                    onChange={(event) => setCommentText(event.target.value)}
-                    placeholder="Write what happened, what you checked, or what changed."
-                  />
+                  <div className="comment-input-wrap" ref={commentInputWrapRef}>
+                    <textarea
+                      id="ticket-comment"
+                      ref={textareaRef}
+                      aria-label="Ticket request or report message"
+                      value={commentText}
+                      onChange={handleCommentTextChange}
+                      onClick={handleCommentCursorMove}
+                      onKeyUp={handleCommentCursorMove}
+                      onBlur={() => setTimeout(() => setMentionSearch(null), 150)}
+                      placeholder="Write a ticket update or request. Type @ to tag a user."
+                    />
+                    {mentionSuggestions.length > 0 && (
+                      <div className="mention-picker" style={{ left: mentionPickerPosition.left, top: mentionPickerPosition.top }}>
+                        {mentionSuggestions.map((candidate) => (
+                          <button type="button" key={candidate.id} onMouseDown={(event) => event.preventDefault()} onClick={() => addMention(candidate)}>
+                            <strong>{candidate.name}</strong>
+                            <span>{candidate.email}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {mentionedUsers.length > 0 && (
+                    <div className="mention-chip-list" aria-label="Tagged users">
+                      {mentionedUsers.map((mentioned) => (
+                        <button type="button" key={mentioned.id} onClick={() => removeMention(mentioned.id)}>
+                          @{mentioned.name}
+                          <span>Remove</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   {commentError && <p className="detail-error">{commentError}</p>}
                   <button type="submit" disabled={submittingComment || !commentText.trim()}>
-                    {submittingComment ? 'Adding...' : 'Add Note'}
+                    {submittingComment ? 'Sending...' : 'Send Report'}
                   </button>
                 </form>
               )}
@@ -288,6 +623,13 @@ export default function TicketDetailPage() {
                           </button>
                         )}
                       </div>
+                      {comment.mentions?.length > 0 && (
+                        <div className="comment-mentions">
+                          {comment.mentions.map((mentioned) => (
+                            <span key={mentioned.id}>@{mentioned.name}</span>
+                          ))}
+                        </div>
+                      )}
                       <p>{comment.commentText}</p>
                     </article>
                   ))
@@ -297,6 +639,96 @@ export default function TicketDetailPage() {
           </section>
         </main>
       </div>
+
+      {editOpen && editForm && (
+        <div className="detail-modal-overlay">
+          <div className="detail-edit-modal" role="dialog" aria-modal="true" aria-labelledby="detail-edit-title">
+            <h2 id="detail-edit-title">Edit Ticket</h2>
+            <form onSubmit={handleEditTicketSubmit}>
+              <label htmlFor="detail-edit-description">Description</label>
+              <input id="detail-edit-description" type="text" required value={editForm.description} onChange={(event) => setEditForm((current) => ({ ...current, description: event.target.value }))} />
+
+              <label htmlFor="detail-edit-priority">Priority</label>
+              <select id="detail-edit-priority" value={editForm.priority} onChange={(event) => handleEditPriorityChange(event.target.value)}>
+                <option>Critical</option>
+                <option>High</option>
+                <option>Medium</option>
+                <option>Low</option>
+              </select>
+
+              <label htmlFor="detail-edit-status">Status</label>
+              <select id="detail-edit-status" value={editForm.status} onChange={(event) => setEditForm((current) => ({ ...current, status: event.target.value }))}>
+                <option>Open</option>
+                <option>In Progress</option>
+                <option>Pending</option>
+                <option>Resolved</option>
+                <option>Closed</option>
+              </select>
+
+              <label htmlFor="detail-edit-team">Assigned Group</label>
+              <select id="detail-edit-team" required value={editForm.assignedGroup} onChange={(event) => setEditForm((current) => ({ ...current, assignedGroup: event.target.value }))}>
+                <option value="">Select group</option>
+                {teams.map((team) => (
+                  <option key={team.id} value={team.name}>{team.name}</option>
+                ))}
+              </select>
+
+              <label htmlFor="detail-edit-service">Service Type</label>
+              <input id="detail-edit-service" type="text" required value={editForm.serviceType} onChange={(event) => setEditForm((current) => ({ ...current, serviceType: event.target.value }))} />
+
+              <div className="detail-edit-two-column">
+                <label htmlFor="detail-edit-sla-type">
+                  <span>SLA Type</span>
+                  <select id="detail-edit-sla-type" value={editForm.slaType} onChange={(event) => setEditForm((current) => ({ ...current, slaType: event.target.value }))}>
+                    <option value="normal">Normal Hours</option>
+                    <option value="business">Business Hours</option>
+                  </select>
+                </label>
+
+                <label htmlFor="detail-edit-sla-hours">
+                  <span>SLA Hours</span>
+                  <input id="detail-edit-sla-hours" type="number" min="1" required value={editForm.slaHours} onChange={(event) => setEditForm((current) => ({ ...current, slaHours: event.target.value }))} />
+                </label>
+              </div>
+
+              <label htmlFor="detail-edit-company">Company</label>
+              <input id="detail-edit-company" type="text" value={editForm.company} onChange={(event) => setEditForm((current) => ({ ...current, company: event.target.value }))} />
+
+              <label htmlFor="detail-edit-product-tier1">Product Categorization Tier 1</label>
+              <input id="detail-edit-product-tier1" type="text" value={editForm.productCategorizationTier1} onChange={(event) => setEditForm((current) => ({ ...current, productCategorizationTier1: event.target.value }))} />
+
+              <label htmlFor="detail-edit-product-tier2">Product Categorization Tier 2</label>
+              <input id="detail-edit-product-tier2" type="text" value={editForm.productCategorizationTier2} onChange={(event) => setEditForm((current) => ({ ...current, productCategorizationTier2: event.target.value }))} />
+
+              <label htmlFor="detail-edit-product-tier3">Product Categorization Tier 3</label>
+              <input id="detail-edit-product-tier3" type="text" value={editForm.productCategorizationTier3} onChange={(event) => setEditForm((current) => ({ ...current, productCategorizationTier3: event.target.value }))} />
+
+              <label htmlFor="detail-edit-category-tier1">Categorization Tier 1</label>
+              <input id="detail-edit-category-tier1" type="text" value={editForm.categorizationTier1} onChange={(event) => setEditForm((current) => ({ ...current, categorizationTier1: event.target.value }))} />
+
+              <label htmlFor="detail-edit-assigned-user">Assigned User</label>
+              <select id="detail-edit-assigned-user" required value={editForm.assignedPersonUserId} onChange={(event) => setEditForm((current) => ({ ...current, assignedPersonUserId: event.target.value }))}>
+                <option value="">Select user</option>
+                {assignableUsers.map((assignableUser) => (
+                  <option key={assignableUser.id} value={assignableUser.id}>{assignableUser.name}</option>
+                ))}
+              </select>
+
+              <label htmlFor="detail-edit-owner">Owner</label>
+              <input id="detail-edit-owner" type="text" value={ticket.Owner || ''} disabled />
+
+              {editError && <p className="detail-error">{editError}</p>}
+
+              <div className="detail-edit-actions">
+                <button type="button" className="detail-secondary-button" onClick={closeEditTicketModal} disabled={savingEdit}>Cancel</button>
+                <button type="submit" className="detail-primary-button" disabled={savingEdit}>
+                  {savingEdit ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

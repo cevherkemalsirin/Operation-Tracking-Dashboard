@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth';
 import '../styles/welcome.css';
+import { fetchMentionNotifications } from '../utils/users';
 
 function QuickCard({ to, icon, label }) {
   const content = (
@@ -17,11 +19,60 @@ function QuickCard({ to, icon, label }) {
   return <div className="card">{content}</div>;
 }
 
+function getNotificationSeenKey(user) {
+  return `operation-dashboard-seen-mentions-${user?.id || user?.email || 'guest'}`;
+}
+
+function loadSeenNotificationIds(user) {
+  try {
+    return JSON.parse(localStorage.getItem(getNotificationSeenKey(user)) || '[]');
+  } catch (err) {
+    return [];
+  }
+}
+
+function saveSeenNotificationIds(user, ids) {
+  localStorage.setItem(getNotificationSeenKey(user), JSON.stringify(ids));
+}
+
 export default function WelcomePage() {
   const { user, role, logout } = useAuth();
+  const [notifications, setNotifications] = useState([]);
+  const [notificationError, setNotificationError] = useState('');
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState(null);
+  const [seenNotificationIds, setSeenNotificationIds] = useState(() => loadSeenNotificationIds(user));
   const now = new Date();
   const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const date = now.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' });
+
+  useEffect(() => {
+    async function loadNotifications() {
+      try {
+        setNotificationError('');
+        const mentionNotifications = await fetchMentionNotifications();
+        setNotifications(mentionNotifications);
+      } catch (err) {
+        setNotificationError('Could not load notifications.');
+        setNotifications([]);
+      }
+    }
+
+    loadNotifications();
+  }, []);
+
+  const unseenNotifications = notifications.filter((notification) => (
+    !seenNotificationIds.includes(notification.id)
+  ));
+
+  function markNotificationsSeen() {
+    const nextSeenIds = Array.from(new Set([
+      ...seenNotificationIds,
+      ...notifications.map((notification) => notification.id),
+    ]));
+    setSeenNotificationIds(nextSeenIds);
+    saveSeenNotificationIds(user, nextSeenIds);
+  }
 
   return (
     <div className="welcome-page">
@@ -39,7 +90,18 @@ export default function WelcomePage() {
             <p><img src="/assets/login-welcome/Images/activiry.png" className="icon" alt="" />Activity</p>
             <p><img src="/assets/login-welcome/Images/insight.png" className="icon" alt="" />Insights</p>
             <p><img src="/assets/login-welcome/Images/statistics.png" className="icon" alt="" />Analytics</p>
-            <p><img src="/assets/login-welcome/Images/notif.png" className="icon" alt="" />Notifications</p>
+            <button
+              type="button"
+              className="notification-menu-button"
+              onClick={() => {
+                markNotificationsSeen();
+                setNotificationsOpen(true);
+              }}
+            >
+              <img src="/assets/login-welcome/Images/notif.png" className="icon" alt="" />
+              Notifications
+              {unseenNotifications.length > 0 && <span className="notification-badge">{unseenNotifications.length}</span>}
+            </button>
             <div className="theme-mini">
               <img src="/assets/login-welcome/Images/moon.png" alt="moon" />
               <img src="/assets/login-welcome/Images/sun.svg" alt="sun" />
@@ -116,21 +178,88 @@ export default function WelcomePage() {
             <p>Password updated (2 days ago)</p>
           </div>
 
-          <div className="card-box">
-            <h3>New Comments</h3>
+          <div className="card-box notification-box">
+            <h3>Notifications</h3>
 
-            <div className="comment">
-              <p>“Everything looks smooth”</p>
-              <span>- Alex</span>
-            </div>
+            {notificationError && <p>{notificationError}</p>}
 
-            <div className="comment">
-              <p>“UI feels really clean!”</p>
-              <span>- Sara</span>
-            </div>
+            {!notificationError && notifications.length === 0 && (
+              <p>No ticket mentions yet.</p>
+            )}
+
+            {!notificationError && notifications.map((notification) => (
+              <button
+                type="button"
+                key={notification.id}
+                className="notification-item"
+                onClick={() => {
+                  markNotificationsSeen();
+                  setSelectedNotification(notification);
+                }}
+              >
+                <strong>{notification.ticketId}</strong>
+                <p>{notification.message}</p>
+                <span>- {notification.authorName}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
+
+      {(notificationsOpen || selectedNotification) && (
+        <div className="notification-modal-backdrop" onClick={() => {
+          setNotificationsOpen(false);
+          setSelectedNotification(null);
+        }}>
+          <div className="notification-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="notification-modal-header">
+              <div>
+                <p>Ticket Mentions</p>
+                <h2>{selectedNotification ? selectedNotification.ticketId : 'Notifications'}</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setNotificationsOpen(false);
+                  setSelectedNotification(null);
+                }}
+                aria-label="Close notifications"
+              >
+                x
+              </button>
+            </div>
+
+            {selectedNotification ? (
+              <div className="notification-detail">
+                <span>From {selectedNotification.authorName}</span>
+                <p>{selectedNotification.message}</p>
+                <Link to={`/tickets/${encodeURIComponent(selectedNotification.ticketId)}`}>
+                  Open ticket detail
+                </Link>
+                <button type="button" onClick={() => setSelectedNotification(null)}>
+                  Back to all notifications
+                </button>
+              </div>
+            ) : (
+              <div className="notification-modal-list">
+                {notificationError && <p>{notificationError}</p>}
+                {!notificationError && notifications.length === 0 && <p>No ticket mentions yet.</p>}
+                {!notificationError && notifications.map((notification) => (
+                  <button
+                    type="button"
+                    key={notification.id}
+                    onClick={() => setSelectedNotification(notification)}
+                  >
+                    <strong>{notification.ticketId}</strong>
+                    <span>From {notification.authorName}</span>
+                    <p>{notification.message}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

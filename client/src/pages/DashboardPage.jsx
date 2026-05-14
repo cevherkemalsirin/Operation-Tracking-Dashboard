@@ -53,6 +53,39 @@ function displayValue(value) {
   return value || '-';
 }
 
+function normalizeValue(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function getUserDisplayName(user) {
+  if (user?.name) return user.name;
+  if (user?.email) return user.email.split('@')[0];
+  return 'User';
+}
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good Morning';
+  if (hour < 18) return 'Good Afternoon';
+  return 'Good Evening';
+}
+
+function ticketBelongsToUser(ticket, user) {
+  if (!user) return false;
+
+  const userKeys = [
+    user.name,
+    user.email,
+    user.email?.split('@')[0],
+    user.id,
+  ].map(normalizeValue).filter(Boolean);
+
+  const owner = normalizeValue(ticket.Owner);
+  const assignedPerson = normalizeValue(ticket.Assigned_Person);
+
+  return userKeys.some((key) => key === owner || key === assignedPerson);
+}
+
 function formatDate(value) {
   if (!value) return '-';
   const [year, month, day] = String(value).slice(0, 10).split('-');
@@ -61,13 +94,14 @@ function formatDate(value) {
 }
 
 export default function DashboardPage() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const [tickets, setTickets] = useState([]);
   const [teams, setTeams] = useState([]);
   const [filters, setFilters] = useState({ search: '', status: 'All', priority: 'All', group: 'All', date: '', sla: 'All' });
   const [error, setError] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [urgentWarningDismissed, setUrgentWarningDismissed] = useState(false);
 
   useEffect(() => {
     async function loadTickets() {
@@ -104,6 +138,16 @@ export default function DashboardPage() {
   const pageStart = (currentPage - 1) * TICKETS_PER_PAGE;
   const pageEnd = pageStart + TICKETS_PER_PAGE;
   const visibleTickets = filteredTickets.slice(pageStart, pageEnd);
+  const userDisplayName = getUserDisplayName(user);
+  const urgentTickets = useMemo(() => {
+    return tickets.filter((ticket) => (
+      !isCompletedTicket(ticket) &&
+      ticket.slaUrgency === 'danger' &&
+      ticketBelongsToUser(ticket, user)
+    ));
+  }, [tickets, user]);
+  const urgentTicketCount = urgentTickets.length;
+  const shouldShowUrgentWarning = urgentTicketCount > 0 && !urgentWarningDismissed;
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -150,7 +194,7 @@ export default function DashboardPage() {
         <main className="dashboard-main">
           <section className="hero-panel">
             <div className="hero-copy">
-              <p className="welcome-header">Good Morning, Cevher Kemal Sirin</p>
+              <p className="welcome-header">{getGreeting()}, {userDisplayName}</p>
               <p className="welcome-sign">Nokia</p>
               <h1 className="welcome-title">Incident Management Console</h1>
               <p className="welcome-subtitle">Operational incidents, ownership, and priority pressure in one focused workspace.</p>
@@ -293,6 +337,34 @@ export default function DashboardPage() {
           </section>
         </main>
       </div>
+
+      {shouldShowUrgentWarning && (
+        <div className="urgent-warning-backdrop" role="presentation">
+          <div className="urgent-warning-modal" role="alertdialog" aria-modal="true" aria-labelledby="urgentWarningTitle">
+            <p className="urgent-warning-kicker">SLA Alert</p>
+            <h2 id="urgentWarningTitle">Urgent tickets need attention</h2>
+            <p>
+              You have {urgentTicketCount} urgent {urgentTicketCount === 1 ? 'ticket' : 'tickets'} close to breaching SLA.
+              Please review and solve {urgentTicketCount === 1 ? 'it' : 'them'} as soon as possible.
+            </p>
+            <div className="urgent-ticket-links" aria-label="Urgent ticket links">
+              {urgentTickets.map((ticket) => (
+                <Link
+                  key={ticket.id}
+                  className="urgent-ticket-link"
+                  to={`/tickets/${encodeURIComponent(ticket.id)}`}
+                  onClick={() => setUrgentWarningDismissed(true)}
+                >
+                  {ticket.id}
+                </Link>
+              ))}
+            </div>
+            <button className="btn urgent-warning-button" type="button" onClick={() => setUrgentWarningDismissed(true)}>
+              I understand
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

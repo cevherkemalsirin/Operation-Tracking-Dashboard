@@ -17,10 +17,10 @@ export async function fetchTicketComments(ticketId) {
   return apiRequest(`/tickets/${encodeURIComponent(ticketId)}/comments`);
 }
 
-export async function addTicketComment(ticketId, commentText) {
+export async function addTicketComment(ticketId, commentText, mentionedUserIds = []) {
   return apiRequest(`/tickets/${encodeURIComponent(ticketId)}/comments`, {
     method: 'POST',
-    body: JSON.stringify({ commentText }),
+    body: JSON.stringify({ commentText, mentionedUserIds }),
   });
 }
 

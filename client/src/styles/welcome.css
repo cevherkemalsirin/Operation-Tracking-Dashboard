@@ -77,7 +77,8 @@
   padding-left: 10px;
 }
 
-.welcome-page .menu p {
+.welcome-page .menu p,
+.welcome-page .notification-menu-button {
   background: rgba(255, 255, 255, 0.08);
   padding: 10px 18px;
   border-radius: 999px;
@@ -86,9 +87,27 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  color: #ffffff;
+  border: 0;
+  font-size: 16px;
 }
 
-.welcome-page .menu p:hover {
+.welcome-page .notification-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #ef4444;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.welcome-page .menu p:hover,
+.welcome-page .notification-menu-button:hover {
   background: rgba(255, 255, 255, 0.18);
   transform: translateX(5px);
 }
@@ -316,6 +335,154 @@
   display: block;
   margin-top: 4px;
   color: #8fb3ff;
+}
+
+.welcome-page .notification-box {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.welcome-page .notification-item {
+  display: grid;
+  gap: 5px;
+  padding: 10px 0;
+  color: #eef0eb;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+}
+
+.welcome-page .notification-item:last-child {
+  border-bottom: 0;
+}
+
+.welcome-page .notification-item:hover {
+  color: #ffffff;
+  transform: translateX(3px);
+}
+
+.welcome-page .notification-item strong {
+  color: #8fb3ff;
+  font-size: 13px;
+}
+
+.welcome-page .notification-item p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.welcome-page .notification-item span {
+  color: #c9d8f5;
+  font-size: 12px;
+}
+
+.welcome-page .notification-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(2, 6, 23, 0.7);
+  backdrop-filter: blur(8px);
+}
+
+.welcome-page .notification-modal {
+  width: min(640px, 100%);
+  max-height: min(720px, calc(100vh - 44px));
+  overflow-y: auto;
+  border: 1px solid rgba(143, 179, 255, 0.28);
+  border-radius: 8px;
+  padding: 22px;
+  background:
+    linear-gradient(180deg, rgba(19, 40, 81, 0.98), rgba(7, 18, 37, 0.98));
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48);
+}
+
+.welcome-page .notification-modal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.welcome-page .notification-modal-header p {
+  margin-bottom: 6px;
+  color: #8fb3ff;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.welcome-page .notification-modal-header h2 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.welcome-page .notification-modal-header button,
+.welcome-page .notification-detail button {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 8px 11px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+}
+
+.welcome-page .notification-modal-list {
+  display: grid;
+  gap: 10px;
+}
+
+.welcome-page .notification-modal-list button {
+  display: grid;
+  gap: 7px;
+  border: 1px solid rgba(143, 179, 255, 0.2);
+  border-radius: 8px;
+  padding: 13px;
+  color: #eef0eb;
+  background: rgba(255, 255, 255, 0.06);
+  text-align: left;
+  cursor: pointer;
+}
+
+.welcome-page .notification-modal-list button:hover {
+  background: rgba(143, 179, 255, 0.14);
+}
+
+.welcome-page .notification-modal-list strong {
+  color: #8fb3ff;
+}
+
+.welcome-page .notification-modal-list span,
+.welcome-page .notification-detail span {
+  color: #c9d8f5;
+  font-size: 13px;
+}
+
+.welcome-page .notification-detail {
+  display: grid;
+  gap: 14px;
+}
+
+.welcome-page .notification-detail p {
+  color: #eef0eb;
+  line-height: 1.65;
+}
+
+.welcome-page .notification-detail a {
+  width: fit-content;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #0a1529;
+  background: #8fb3ff;
+  text-decoration: none;
+  font-weight: 800;
 }
 
 .welcome-page .theme-mini {

@@ -37,3 +37,33 @@ export async function updateUserRole(req, res) {
 
   return res.json(result.rows[0]);
 }
+
+export async function getMentionNotifications(req, res) {
+  const result = await query(
+    `SELECT
+       mention.id,
+       mention.read_at,
+       mention.created_at,
+       c.ticket_id,
+       c.comment_text,
+       author.name AS author_name,
+       author.email AS author_email
+     FROM ticket_comment_mentions mention
+     JOIN ticket_comments c ON c.id = mention.comment_id
+     LEFT JOIN users author ON author.id = c.user_id
+     WHERE mention.mentioned_user_id = $1
+     ORDER BY mention.created_at DESC
+     LIMIT 20`,
+    [req.user.id]
+  );
+
+  return res.json(result.rows.map((row) => ({
+    id: row.id,
+    ticketId: row.ticket_id,
+    message: row.comment_text,
+    authorName: row.author_name || 'Unknown user',
+    authorEmail: row.author_email || '',
+    createdAt: row.created_at,
+    readAt: row.read_at,
+  })));
+}

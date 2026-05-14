@@ -145,6 +145,7 @@ function mapCommentRow(row) {
     userId: row.user_id,
     userName: row.user_name || 'Unknown user',
     createdAt: row.created_at,
+    mentions: row.mentions || [],
   };
 }
 
@@ -204,10 +205,20 @@ export async function getTicketComments(req, res) {
        c.comment_text,
        c.user_id,
        c.created_at,
-       u.name AS user_name
+       u.name AS user_name,
+       COALESCE(
+         json_agg(
+           json_build_object('id', mu.id, 'name', mu.name, 'email', mu.email)
+           ORDER BY mu.name
+         ) FILTER (WHERE mu.id IS NOT NULL),
+         '[]'::json
+       ) AS mentions
      FROM ticket_comments c
      LEFT JOIN users u ON u.id = c.user_id
+     LEFT JOIN ticket_comment_mentions mention ON mention.comment_id = c.id
+     LEFT JOIN users mu ON mu.id = mention.mentioned_user_id
      WHERE c.ticket_id = $1
+     GROUP BY c.id, u.name
      ORDER BY c.created_at ASC, c.id ASC`,
     [req.params.id]
   );
@@ -218,6 +229,9 @@ export async function getTicketComments(req, res) {
 export async function addTicketComment(req, res) {
   const ticket = await findTicketRow(req.params.id);
   const commentText = req.body.commentText?.trim();
+  const mentionedUserIds = Array.isArray(req.body.mentionedUserIds)
+    ? Array.from(new Set(req.body.mentionedUserIds.map(Number).filter(Number.isInteger)))
+    : [];
 
   if (!ticket) {
     return res.status(404).json({ message: 'Ticket not found.' });
@@ -227,11 +241,33 @@ export async function addTicketComment(req, res) {
     return res.status(400).json({ message: 'Comment text is required.' });
   }
 
-  await query(
+  if (mentionedUserIds.length > 0) {
+    const userResult = await query(
+      'SELECT id FROM users WHERE id = ANY($1::int[])',
+      [mentionedUserIds]
+    );
+
+    if (userResult.rowCount !== mentionedUserIds.length) {
+      return res.status(400).json({ message: 'One or more mentioned users do not exist.' });
+    }
+  }
+
+  const commentResult = await query(
     `INSERT INTO ticket_comments (ticket_id, user_id, comment_text)
-     VALUES ($1, $2, $3)`,
+     VALUES ($1, $2, $3)
+     RETURNING id`,
     [req.params.id, req.user.id, commentText]
   );
+  const commentId = commentResult.rows[0].id;
+
+  for (const mentionedUserId of mentionedUserIds) {
+    await query(
+      `INSERT INTO ticket_comment_mentions (comment_id, mentioned_user_id)
+       VALUES ($1, $2)
+       ON CONFLICT (comment_id, mentioned_user_id) DO NOTHING`,
+      [commentId, mentionedUserId]
+    );
+  }
 
   await addHistoryEntry(req.params.id, req.user.id, 'commented', 'comment', null, commentText);
 
