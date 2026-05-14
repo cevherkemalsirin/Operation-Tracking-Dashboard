@@ -7,6 +7,25 @@ import { fetchTeams } from '../utils/teams';
 import PaginationButtons from '../components/PaginationButtons';
 
 const TICKETS_PER_PAGE = 20;
+const DEFAULT_FILTERS = {
+  search: '',
+  status: [],
+  priority: [],
+  group: [],
+  submitStartDate: '',
+  submitEndDate: '',
+  sla: [],
+};
+
+const STATUS_OPTIONS = ['Open', 'In Progress', 'Pending', 'Resolved', 'Closed'];
+const PRIORITY_OPTIONS = ['Critical', 'High', 'Medium', 'Low'];
+const SLA_OPTIONS = ['Overdue', 'Urgent', 'Warning', 'Normal'];
+const FILTER_CHIP_LABELS = {
+  status: 'Status',
+  priority: 'Priority',
+  group: 'Team',
+  sla: 'SLA',
+};
 
 function getStatusClass(status) {
   if (status === 'Open') return 'open';
@@ -36,7 +55,6 @@ function isCompletedTicket(ticket) {
 }
 
 function matchesSlaFilter(ticket, slaFilter) {
-  if (slaFilter === 'All') return true;
   if (isCompletedTicket(ticket)) return false;
 
   if (slaFilter === 'Overdue') return ticket.slaUrgency === 'overdue';
@@ -46,6 +64,19 @@ function matchesSlaFilter(ticket, slaFilter) {
     return ticket.slaUrgency === 'normal' || ticket.slaUrgency === 'none' || !ticket.slaUrgency;
   }
 
+  return true;
+}
+
+function matchesSelectedValues(value, selectedValues) {
+  return selectedValues.length === 0 || selectedValues.includes(value);
+}
+
+function matchesDateRange(dateValue, startDate, endDate) {
+  if (!startDate && !endDate) return true;
+  if (!dateValue) return false;
+
+  if (startDate && dateValue < startDate) return false;
+  if (endDate && dateValue > endDate) return false;
   return true;
 }
 
@@ -97,7 +128,7 @@ export default function DashboardPage() {
   const { role, user } = useAuth();
   const [tickets, setTickets] = useState([]);
   const [teams, setTeams] = useState([]);
-  const [filters, setFilters] = useState({ search: '', status: 'All', priority: 'All', group: 'All', date: '', sla: 'All' });
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [error, setError] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -125,11 +156,11 @@ export default function DashboardPage() {
       const matchesSearch =
         ticket.id.toLowerCase().includes(searchValue) ||
         ticket.description.toLowerCase().includes(searchValue);
-      const matchesStatus = filters.status === 'All' || ticket.status === filters.status;
-      const matchesPriority = filters.priority === 'All' || ticket.priority === filters.priority;
-      const matchesGroup = filters.group === 'All' || ticket.assignedGroup === filters.group;
-      const matchesDate = !filters.date || ticket.submitDate === filters.date;
-      const matchesSla = matchesSlaFilter(ticket, filters.sla);
+      const matchesStatus = matchesSelectedValues(ticket.status, filters.status);
+      const matchesPriority = matchesSelectedValues(ticket.priority, filters.priority);
+      const matchesGroup = matchesSelectedValues(ticket.assignedGroup, filters.group);
+      const matchesDate = matchesDateRange(ticket.submitDate, filters.submitStartDate, filters.submitEndDate);
+      const matchesSla = filters.sla.length === 0 || filters.sla.some((slaFilter) => matchesSlaFilter(ticket, slaFilter));
       return matchesSearch && matchesStatus && matchesPriority && matchesGroup && matchesDate && matchesSla;
     });
   }, [tickets, filters]);
@@ -148,6 +179,13 @@ export default function DashboardPage() {
   }, [tickets, user]);
   const urgentTicketCount = urgentTickets.length;
   const shouldShowUrgentWarning = urgentTicketCount > 0 && !urgentWarningDismissed;
+  const activeFilterChips = ['status', 'priority', 'group', 'sla'].flatMap((filterName) => (
+    filters[filterName].map((value) => ({
+      filterName,
+      value,
+      label: `${FILTER_CHIP_LABELS[filterName]}: ${value}`,
+    }))
+  ));
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -160,9 +198,35 @@ export default function DashboardPage() {
     setCurrentPage(1);
   }
 
-  function resetFilters() {
-    setFilters({ search: '', status: 'All', priority: 'All', group: 'All', date: '', sla: 'All' });
+  function addFilterValue(name, value) {
+    if (!value) return;
+    setFilters((current) => {
+      if (current[name].includes(value)) return current;
+      return { ...current, [name]: [...current[name], value] };
+    });
     setCurrentPage(1);
+  }
+
+  function removeFilterValue(name, value) {
+    setFilters((current) => ({
+      ...current,
+      [name]: current[name].filter((filterValue) => filterValue !== value),
+    }));
+    setCurrentPage(1);
+  }
+
+  function resetFilters() {
+    setFilters(DEFAULT_FILTERS);
+    setCurrentPage(1);
+  }
+
+  function showUrgentTicketsFromWarning() {
+    setFilters((current) => ({
+      ...current,
+      sla: current.sla.includes('Urgent') ? current.sla : [...current.sla, 'Urgent'],
+    }));
+    setCurrentPage(1);
+    setUrgentWarningDismissed(true);
   }
 
   return (
@@ -212,25 +276,38 @@ export default function DashboardPage() {
             <div className="section-top">
               <div>
                 <h2 className="section-title">Filters</h2>
-                <p className="section-note">Filter the ticket list by status, priority, group, text, and date.</p>
+                <p className="section-note">Filter the ticket list by status, priority, team, text, SLA, and submit date period.</p>
               </div>
               <button className="btn btn-reset" onClick={resetFilters}>Reset</button>
             </div>
             <div className="filters">
-              <div className="field"><label htmlFor="statusFilter">Status</label><select id="statusFilter" value={filters.status} onChange={(e)=>updateFilter('status', e.target.value)}><option value="All">All</option><option value="Open">Open</option><option value="In Progress">In Progress</option><option value="Pending">Pending</option><option value="Resolved">Resolved</option><option value="Closed">Closed</option></select></div>
-              <div className="field"><label htmlFor="priorityFilter">Priority</label><select id="priorityFilter" value={filters.priority} onChange={(e)=>updateFilter('priority', e.target.value)}><option value="All">All</option><option value="Critical">Critical</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select></div>
+              <div className="field"><label htmlFor="statusFilter">Status</label><select id="statusFilter" value="" onChange={(e)=>addFilterValue('status', e.target.value)}><option value="">Add status</option>{STATUS_OPTIONS.map((status) => <option key={status} value={status} disabled={filters.status.includes(status)}>{status}</option>)}</select></div>
+              <div className="field"><label htmlFor="priorityFilter">Priority</label><select id="priorityFilter" value="" onChange={(e)=>addFilterValue('priority', e.target.value)}><option value="">Add priority</option>{PRIORITY_OPTIONS.map((priority) => <option key={priority} value={priority} disabled={filters.priority.includes(priority)}>{priority}</option>)}</select></div>
               <div className="field">
-                <label htmlFor="groupFilter">Assigned Group</label>
-                <select id="groupFilter" value={filters.group} onChange={(e) => updateFilter('group', e.target.value)}>
-                  <option value="All">All</option>
+                <label htmlFor="groupFilter">Team</label>
+                <select id="groupFilter" value="" onChange={(e) => addFilterValue('group', e.target.value)}>
+                  <option value="">Add team</option>
                   {teams.map((team) => (
-                    <option key={team.id} value={team.name}>{team.name}</option>
+                    <option key={team.id} value={team.name} disabled={filters.group.includes(team.name)}>{team.name}</option>
                   ))}
                 </select>
               </div>
-              <div className="field"><label htmlFor="dateFilter">Submit Date</label><input id="dateFilter" type="date" value={filters.date} onChange={(e)=>updateFilter('date', e.target.value)} /></div>
-              <div className="field"><label htmlFor="slaFilter">SLA</label><select id="slaFilter" value={filters.sla} onChange={(e)=>updateFilter('sla', e.target.value)}><option value="All">All</option><option value="Overdue">Overdue</option><option value="Urgent">Urgent</option><option value="Warning">Warning</option><option value="Normal">Normal</option></select></div>
+              <div className="field"><label htmlFor="submitStartDateFilter">Submit From</label><input id="submitStartDateFilter" type="date" value={filters.submitStartDate} onChange={(e)=>updateFilter('submitStartDate', e.target.value)} /></div>
+              <div className="field"><label htmlFor="submitEndDateFilter">Submit To</label><input id="submitEndDateFilter" type="date" value={filters.submitEndDate} onChange={(e)=>updateFilter('submitEndDate', e.target.value)} /></div>
+              <div className="field"><label htmlFor="slaFilter">SLA</label><select id="slaFilter" value="" onChange={(e)=>addFilterValue('sla', e.target.value)}><option value="">Add SLA</option>{SLA_OPTIONS.map((sla) => <option key={sla} value={sla} disabled={filters.sla.includes(sla)}>{sla}</option>)}</select></div>
             </div>
+            {activeFilterChips.length > 0 && (
+              <div className="active-filter-chips" aria-label="Active filters">
+                {activeFilterChips.map((chip) => (
+                  <span className="active-filter-chip" key={`${chip.filterName}-${chip.value}`}>
+                    {chip.label}
+                    <button type="button" aria-label={`Remove ${chip.label}`} onClick={() => removeFilterValue(chip.filterName, chip.value)}>
+                      x
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </section>
 
           <section className="panel incidents-panel">
@@ -260,7 +337,7 @@ export default function DashboardPage() {
                     <th>SLA Remaining</th>
                     <th>Status</th>
                     <th>Priority</th>
-                    <th>Assigned Group</th>
+                    <th>Team</th>
                     <th>Owner</th>
                     <th>Assigned Person</th>
                     <th>Company</th>
@@ -271,6 +348,7 @@ export default function DashboardPage() {
                     <th>Service Type</th>
                     <th>Submit Date</th>
                     <th>Last Modified Date</th>
+                    <th>Resolved Date</th>
                     <th>Close Date</th>
                     <th>Aging</th>
                   </tr>
@@ -294,6 +372,7 @@ export default function DashboardPage() {
                       <td><span className="service-chip">{ticket.serviceType}</span></td>
                       <td>{formatDate(ticket.submitDate)}</td>
                       <td>{formatDate(ticket.lastModifiedDate)}</td>
+                      <td>{formatDate(ticket.resolvedDate)}</td>
                       <td>{formatDate(ticket.closeDate)}</td>
                       <td className="aging-cell">{ticket.aging} days</td>
                     </tr>
@@ -359,9 +438,14 @@ export default function DashboardPage() {
                 </Link>
               ))}
             </div>
-            <button className="btn urgent-warning-button" type="button" onClick={() => setUrgentWarningDismissed(true)}>
-              I understand
-            </button>
+            <div className="urgent-warning-actions">
+              <button className="btn urgent-warning-button" type="button" onClick={showUrgentTicketsFromWarning}>
+                Show urgent tickets
+              </button>
+              <button className="btn urgent-warning-button secondary" type="button" onClick={() => setUrgentWarningDismissed(true)}>
+                I understand
+              </button>
+            </div>
           </div>
         </div>
       )}

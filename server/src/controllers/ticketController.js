@@ -14,6 +14,7 @@ const ticketSelect = `
     t.service_type,
     TO_CHAR(t.submit_date, 'YYYY-MM-DD') AS submit_date,
     TO_CHAR(t.last_modified_date, 'YYYY-MM-DD') AS last_modified_date,
+    TO_CHAR(t.resolved_date, 'YYYY-MM-DD') AS resolved_date,
     TO_CHAR(t.close_date, 'YYYY-MM-DD') AS close_date,
     t.updated_at,
     t.company,
@@ -91,6 +92,22 @@ function getCloseDateForStatus(nextStatus, currentStatus, requestedCloseDate, cu
 
   if (nextStatus === 'Closed') {
     return requestedCloseDate || currentCloseDate || getTodayDate();
+  }
+
+  return null;
+}
+
+function getResolvedDateForStatus(nextStatus, currentStatus, currentResolvedDate) {
+  if (nextStatus === 'Resolved' && currentStatus !== 'Resolved') {
+    return getTodayDate();
+  }
+
+  if (nextStatus === 'Resolved') {
+    return currentResolvedDate || getTodayDate();
+  }
+
+  if (nextStatus === 'Closed') {
+    return currentResolvedDate || null;
   }
 
   return null;
@@ -331,6 +348,7 @@ export async function createTicket(req, res) {
   const team = await resolveTicketTeam({ teamId, assignedGroup });
 
   const closeDateValue = status === 'Closed' ? getTodayDate() : null;
+  const resolvedDateValue = status === 'Resolved' ? getTodayDate() : null;
   const lastModifiedDateValue = getTodayDate();
   const defaultSla = getDefaultSlaForPriority(priority);
   const slaTypeValue = slaType || defaultSla.slaType;
@@ -348,6 +366,7 @@ export async function createTicket(req, res) {
       service_type,
       submit_date,
       last_modified_date,
+      resolved_date,
       close_date,
       company,
       product_categorization_tier1,
@@ -360,7 +379,7 @@ export async function createTicket(req, res) {
       aging,
       owner_user_id,
       assigned_person_user_id
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)`,
     [
       id,
       description,
@@ -371,6 +390,7 @@ export async function createTicket(req, res) {
       serviceType,
       submitDate,
       lastModifiedDateValue,
+      resolvedDateValue,
       closeDateValue,
       company || null,
       productCategorizationTier1 || null,
@@ -411,6 +431,11 @@ export async function updateTicket(req, res) {
       req.body.closeDate,
       currentTicket.close_date
     );
+    const resolvedDateValue = getResolvedDateForStatus(
+      nextStatus,
+      currentTicket.status,
+      currentTicket.resolved_date
+    );
 
     await query(
       `UPDATE tickets
@@ -418,15 +443,17 @@ export async function updateTicket(req, res) {
          status = $1,
          aging = $2,
          last_modified_date = CURRENT_DATE,
-         close_date = $3,
+         resolved_date = $3,
+         close_date = $4,
          updated_at = NOW()
-       WHERE id = $4`,
-      [nextStatus, req.body.aging ?? currentTicket.aging, closeDateValue, ticketId]
+       WHERE id = $5`,
+      [nextStatus, req.body.aging ?? currentTicket.aging, resolvedDateValue, closeDateValue, ticketId]
     );
 
     await addChangedFieldHistory(ticketId, req.user.id, [
       { fieldName: 'Status', oldValue: currentTicket.status, newValue: nextStatus },
       { fieldName: 'Aging', oldValue: currentTicket.aging, newValue: req.body.aging ?? currentTicket.aging },
+      { fieldName: 'Resolved Date', oldValue: currentTicket.resolved_date, newValue: resolvedDateValue },
       { fieldName: 'Close Date', oldValue: currentTicket.close_date, newValue: closeDateValue },
     ]);
 
@@ -446,6 +473,11 @@ export async function updateTicket(req, res) {
     req.body.closeDate,
     currentTicket.close_date
   );
+  const resolvedDateValue = getResolvedDateForStatus(
+    nextStatus,
+    currentTicket.status,
+    currentTicket.resolved_date
+  );
 
   // Resolve the team for this update. If the request didn't include either
   // teamId or assignedGroup, fall back to what's already on the ticket.
@@ -461,22 +493,23 @@ export async function updateTicket(req, res) {
        priority = $3,
        assigned_group = $4,
        team_id = $5,
-       service_type = $6,
-       submit_date = $7,
-       last_modified_date = CURRENT_DATE,
-       close_date = $8,
-       company = $9,
-       product_categorization_tier1 = $10,
-       product_categorization_tier2 = $11,
-       product_categorization_tier3 = $12,
-       categorization_tier1 = $13,
-       sla_type = $14,
-       sla_hours = $15,
-       sla_deadline = $16,
-       aging = $17,
-       assigned_person_user_id = $18,
-       updated_at = NOW()
-     WHERE id = $19`,
+      service_type = $6,
+      submit_date = $7,
+      last_modified_date = CURRENT_DATE,
+      resolved_date = $8,
+      close_date = $9,
+      company = $10,
+      product_categorization_tier1 = $11,
+      product_categorization_tier2 = $12,
+      product_categorization_tier3 = $13,
+      categorization_tier1 = $14,
+      sla_type = $15,
+      sla_hours = $16,
+      sla_deadline = $17,
+      aging = $18,
+      assigned_person_user_id = $19,
+      updated_at = NOW()
+     WHERE id = $20`,
     [
       req.body.description,
       req.body.status,
@@ -485,6 +518,7 @@ export async function updateTicket(req, res) {
       team.teamId,
       req.body.serviceType,
       req.body.submitDate,
+      resolvedDateValue,
       closeDateValue,
       req.body.company || currentTicket.company,
       req.body.productCategorizationTier1 || currentTicket.product_categorization_tier1,
@@ -504,10 +538,11 @@ export async function updateTicket(req, res) {
     { fieldName: 'Description', oldValue: currentTicket.description, newValue: req.body.description },
     { fieldName: 'Status', oldValue: currentTicket.status, newValue: req.body.status },
     { fieldName: 'Priority', oldValue: currentTicket.priority, newValue: req.body.priority },
-    { fieldName: 'Assigned Group', oldValue: currentTicket.assigned_group, newValue: team.assignedGroup },
-    { fieldName: 'Team', oldValue: currentTicket.team_id, newValue: team.teamId },
+    { fieldName: 'Team', oldValue: currentTicket.assigned_group, newValue: team.assignedGroup },
+    { fieldName: 'Team ID', oldValue: currentTicket.team_id, newValue: team.teamId },
     { fieldName: 'Service Type', oldValue: currentTicket.service_type, newValue: req.body.serviceType },
     { fieldName: 'Submit Date', oldValue: currentTicket.submit_date, newValue: req.body.submitDate },
+    { fieldName: 'Resolved Date', oldValue: currentTicket.resolved_date, newValue: resolvedDateValue },
     { fieldName: 'Close Date', oldValue: currentTicket.close_date, newValue: closeDateValue },
     { fieldName: 'Company', oldValue: currentTicket.company, newValue: req.body.company || currentTicket.company },
     { fieldName: 'Product Categorization Tier 1', oldValue: currentTicket.product_categorization_tier1, newValue: req.body.productCategorizationTier1 || currentTicket.product_categorization_tier1 },

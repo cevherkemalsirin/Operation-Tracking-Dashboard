@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useParams } from 'react-router-dom';
 import '../styles/dashboard.css';
+import '../styles/ticket-management.css';
 import '../styles/ticket-detail.css';
 import { AUTH_ROLES, useAuth } from '../auth';
 import {
@@ -493,7 +494,7 @@ export default function TicketDetailPage() {
     <dl className="detail-definition-grid">
       <div><dt>Owner</dt><dd>{displayValue(ticket.Owner)}</dd></div>
       <div><dt>Assigned Person</dt><dd>{displayValue(ticket.Assigned_Person)}</dd></div>
-      <div><dt>Assigned Group</dt><dd>{displayValue(ticket.assignedGroup)}</dd></div>
+      <div><dt>Team</dt><dd>{displayValue(ticket.assignedGroup)}</dd></div>
       <div><dt>Company</dt><dd>{displayValue(ticket.company)}</dd></div>
       <div><dt>Service Type</dt><dd>{displayValue(ticket.serviceType)}</dd></div>
       <div><dt>Last Modified</dt><dd>{formatDate(ticket.lastModifiedDate)}</dd></div>
@@ -645,9 +646,9 @@ export default function TicketDetailPage() {
         </main>
       </div>
 
-      {editOpen && editForm && (
-        <div className="detail-modal-overlay">
-          <div className="detail-edit-modal" role="dialog" aria-modal="true" aria-labelledby="detail-edit-title">
+      <div className={`modal-overlay ${editOpen && editForm ? 'active' : ''}`} aria-hidden={!editOpen || !editForm}>
+        {editForm && (
+          <div className="modal-card" role="dialog" aria-modal="true" aria-labelledby="detail-edit-title">
             <h2 id="detail-edit-title">Edit Ticket</h2>
             <form onSubmit={handleEditTicketSubmit}>
               <label htmlFor="detail-edit-description">Description</label>
@@ -670,9 +671,12 @@ export default function TicketDetailPage() {
                 <option>Closed</option>
               </select>
 
-              <label htmlFor="detail-edit-team">Assigned Group</label>
+              <label htmlFor="detail-edit-team">Team</label>
               <select id="detail-edit-team" required value={editForm.assignedGroup} onChange={(event) => setEditForm((current) => ({ ...current, assignedGroup: event.target.value }))}>
-                <option value="">Select group</option>
+                {!teams.some((team) => team.name === editForm.assignedGroup) && editForm.assignedGroup && (
+                  <option value={editForm.assignedGroup}>{editForm.assignedGroup} (legacy)</option>
+                )}
+                <option value="">Select team</option>
                 {teams.map((team) => (
                   <option key={team.id} value={team.name}>{team.name}</option>
                 ))}
@@ -724,16 +728,16 @@ export default function TicketDetailPage() {
 
               {editError && <p className="detail-error">{editError}</p>}
 
-              <div className="detail-edit-actions">
-                <button type="button" className="detail-secondary-button" onClick={closeEditTicketModal} disabled={savingEdit}>Cancel</button>
-                <button type="submit" className="detail-primary-button" disabled={savingEdit}>
+              <div className="modal-actions">
+                <button type="button" className="secondary-button" onClick={closeEditTicketModal} disabled={savingEdit}>Cancel</button>
+                <button type="submit" className="primary-button" disabled={savingEdit}>
                   {savingEdit ? 'Saving...' : 'Save'}
                 </button>
               </div>
             </form>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

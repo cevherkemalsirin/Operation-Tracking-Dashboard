@@ -497,7 +497,7 @@ export default function TicketManagementPage() {
                     <dl className="ticket-properties">
                       <div><dt>Owner</dt><dd>{ticket.Owner}</dd></div>
                       <div><dt>Assigned</dt><dd>{ticket.Assigned_Person}</dd></div>
-                      <div><dt>Queue</dt><dd>{ticket.assignedGroup}</dd></div>
+                        <div><dt>Team</dt><dd>{ticket.assignedGroup}</dd></div>
                       <div><dt>Company</dt><dd>{ticket.company || '-'}</dd></div>
                       <div><dt>Submitted</dt><dd>{formatDate(ticket.submitDate)}</dd></div>
                       <div><dt>Last Modified</dt><dd>{formatDate(ticket.lastModifiedDate)}</dd></div>
@@ -583,7 +583,7 @@ export default function TicketManagementPage() {
                   <option value="Low">Low</option>
                 </select>
 
-                <label htmlFor="ticket-group">Assigned Group</label>
+            <label htmlFor="ticket-group">Team</label>
                 <select
                   id="ticket-group"
                   required

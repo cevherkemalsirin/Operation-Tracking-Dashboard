@@ -414,7 +414,7 @@
 
 .filters {
   display: grid;
-  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  grid-template-columns: repeat(6, minmax(140px, 1fr));
   gap: 12px;
 }
 
@@ -456,6 +456,47 @@
 
 .field select option {
   color: #101010;
+}
+
+.active-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.active-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 7px 8px 7px 11px;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  background: rgba(143, 179, 255, 0.14);
+  border: 1px solid rgba(143, 179, 255, 0.26);
+}
+
+.active-filter-chip button {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid rgba(248, 113, 113, 0.58);
+  border-radius: 6px;
+  color: #fecaca;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  background: rgba(127, 29, 29, 0.58);
+  cursor: pointer;
+}
+
+.active-filter-chip button:hover {
+  color: #ffffff;
+  background: rgba(220, 38, 38, 0.82);
 }
 
 .graph-stage {
@@ -1085,11 +1126,22 @@ tbody td {
   transform: translateY(-1px);
 }
 
+.urgent-warning-actions {
+  display: grid;
+  gap: 10px;
+}
+
 .urgent-warning-button {
   width: 100%;
   color: #ffffff;
   background: linear-gradient(180deg, #ef4444, #b91c1c);
   border: 1px solid rgba(252, 165, 165, 0.45);
+}
+
+.urgent-warning-button.secondary {
+  color: #d8d8d0;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .dashboard-pagination {

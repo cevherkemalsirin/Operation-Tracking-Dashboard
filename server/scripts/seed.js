@@ -195,7 +195,15 @@ function getAging(submitValue) {
 }
 
 function getCloseDate(status, updatedAt) {
-  if (status === 'Resolved' || status === 'Closed') {
+  if (status === 'Closed') {
+    return getDateOnly(updatedAt);
+  }
+
+  return null;
+}
+
+function getResolvedDate(status, updatedAt) {
+  if (status === 'Resolved') {
     return getDateOnly(updatedAt);
   }
 
@@ -286,6 +294,7 @@ async function insertTickets(userIdByKey, teamIdByName) {
     const slaDeadline = calculateSlaDeadline(submitDate, defaultSla.slaType, defaultSla.slaHours);
     const updatedAt = getUpdatedAt(status, submitDate, { value: slaDeadline, priority, index });
     const closeDate = getCloseDate(status, updatedAt);
+    const resolvedDate = getResolvedDate(status, updatedAt);
     const ticketId = `INC${String(1301 + index).padStart(6, '0')}`;
     const ownerUserId = userIdByKey[ownerKey];
     const assignedUserId = userIdByKey[assignedKey];
@@ -302,6 +311,7 @@ async function insertTickets(userIdByKey, teamIdByName) {
         service_type,
         submit_date,
         last_modified_date,
+        resolved_date,
         close_date,
         company,
         product_categorization_tier1,
@@ -316,7 +326,7 @@ async function insertTickets(userIdByKey, teamIdByName) {
         assigned_person_user_id,
         created_at,
         updated_at
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)`,
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)`,
       [
         ticketId,
         description,
@@ -327,6 +337,7 @@ async function insertTickets(userIdByKey, teamIdByName) {
         serviceType,
         getDateOnly(submitDate),
         getDateOnly(updatedAt),
+        resolvedDate,
         closeDate,
         company,
         productTier1,
