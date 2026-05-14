@@ -128,15 +128,15 @@ body {
   filter:
     drop-shadow(0 0 10px rgba(56,189,248,0.55));
 
-  stroke-dasharray: 2200;
-  stroke-dashoffset: 2200;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
 
-  animation: drawLine 5s ease-in-out infinite;
+  animation: drawLine 5s linear infinite;
 }
 
 /* ARROW */
 
-.arrow-head {
+.moving-arrow {
   fill: #84d2f3;
 
   filter:
@@ -148,7 +148,7 @@ body {
 @keyframes drawLine {
 
   0% {
-    stroke-dashoffset: 2200;
+    stroke-dashoffset: 1;
   }
 
   45% {
@@ -160,7 +160,7 @@ body {
   }
 
   100% {
-    stroke-dashoffset: 2200;
+    stroke-dashoffset: 1;
   }
 }
 

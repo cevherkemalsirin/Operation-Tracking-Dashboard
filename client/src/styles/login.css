@@ -49,13 +49,20 @@
   inset: 0;
 
   background:
-    repeating-linear-gradient(
-      to right,
-      transparent 0 8%,
-      rgba(56,189,248,0.08) 8% 9%
-    );
+    linear-gradient(to top, rgba(56,189,248,0.12), rgba(56,189,248,0.01)) 6% 100% / 18px 26% no-repeat,
+    linear-gradient(to top, rgba(56,189,248,0.10), rgba(56,189,248,0.01)) 13% 100% / 16px 61% no-repeat,
+    linear-gradient(to top, rgba(56,189,248,0.13), rgba(56,189,248,0.01)) 21% 100% / 20px 42% no-repeat,
+    linear-gradient(to top, rgba(56,189,248,0.09), rgba(56,189,248,0.01)) 29% 100% / 16px 73% no-repeat,
+    linear-gradient(to top, rgba(56,189,248,0.14), rgba(56,189,248,0.01)) 36% 100% / 18px 35% no-repeat,
+    linear-gradient(to top, rgba(56,189,248,0.11), rgba(56,189,248,0.01)) 45% 100% / 16px 84% no-repeat,
+    linear-gradient(to top, rgba(56,189,248,0.12), rgba(56,189,248,0.01)) 52% 100% / 20px 54% no-repeat,
+    linear-gradient(to top, rgba(56,189,248,0.09), rgba(56,189,248,0.01)) 60% 100% / 16px 68% no-repeat,
+    linear-gradient(to top, rgba(56,189,248,0.13), rgba(56,189,248,0.01)) 68% 100% / 18px 32% no-repeat,
+    linear-gradient(to top, rgba(56,189,248,0.10), rgba(56,189,248,0.01)) 76% 100% / 16px 78% no-repeat,
+    linear-gradient(to top, rgba(56,189,248,0.12), rgba(56,189,248,0.01)) 84% 100% / 20px 47% no-repeat,
+    linear-gradient(to top, rgba(56,189,248,0.09), rgba(56,189,248,0.01)) 93% 100% / 16px 59% no-repeat;
 
-  opacity: 0.42;
+  opacity: 0.46;
 
   mask-image:
     linear-gradient(
@@ -75,10 +82,36 @@
 
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-end;
 
   position: relative;
   z-index: 3;
+
+  padding-bottom: clamp(68px, 10vh, 130px);
+}
+
+/* background wordmark */
+
+.login-page .login-background-wordmark {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  z-index: 2;
+
+  width: min(1080px, 92vw );
+  max-height: 44vh;
+  object-fit: contain;
+
+  opacity: 0.5;
+  transform: translate(-50%, -50%);
+
+  filter:
+    drop-shadow(0 0 18px rgba(0, 0, 150, 0.65))
+    drop-shadow(0 0 42px rgba(15, 16, 17, 0.72))
+    drop-shadow(0 0 88px rgba(21, 15, 15, 0.48));
+
+  pointer-events: none;
+  user-select: none;
 }
 
 /* card */
@@ -415,6 +448,17 @@
 }
 
 /* mobile */
+
+@media (max-width: 720px) {
+
+  .login-page .login-background-wordmark {
+    width: 92vw;
+    opacity: 0.22;
+    max-height: 34vh;
+    top: 18%;
+  }
+
+}
 
 @media (max-width: 520px) {
 

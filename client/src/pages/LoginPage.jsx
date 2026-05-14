@@ -68,6 +68,12 @@ export default function LoginPage() {
     <div className="login-page">
       <div className="page">
         <img src="/assets/login-welcome/Images/nokia.svg" className="logo" alt="nokia" />
+        <img
+          src="/assets/login-welcome/Images/nokia-operation-dashboard-bg.png"
+          className="login-background-wordmark"
+          alt=""
+          aria-hidden="true"
+        />
         <div className="login-card">
           <div className="tabs">
             <button className={`tab ${mode === 'login' ? 'active' : ''}`} type="button" onClick={() => setMode('login')}>Sign In</button>
@@ -128,7 +134,7 @@ export default function LoginPage() {
             {notice && <p className="divider" role="status">{notice}</p>}
             {error && <p className="error-text" role="alert">{error}</p>}
           </form>
-          <p className="divider">{mode === 'signup' ? 'New accounts are created as viewer by default.' : 'Use one of the seeded demo accounts or sign up.'}</p>
+          <p className="divider">{mode === 'signup' ? '' : ''}</p>
         </div>
       </div>
     </div>

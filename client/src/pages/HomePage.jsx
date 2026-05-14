@@ -13,19 +13,6 @@ export default function HomePage() {
 
           <svg viewBox="0 0 1440 600" preserveAspectRatio="none">
 
-            <defs>
-              <marker
-                id="arrow"
-               markerWidth="18"
-               markerHeight="18"
-               refX="10"
-               refY="6"
-                orient="auto"
-              >
-                <path d="M0,0 L12,6 L0,12 Z" className="arrow-head" />
-              </marker>
-            </defs>
-
             <line className="axis" x1="0" y1="520" x2="1440" y2="520" />
 
             <rect className="bar" x="100" y="420" width="16" height="100" rx="8" />
@@ -41,15 +28,42 @@ export default function HomePage() {
 
             <path
               className="growth-line"
+              pathLength="1"
               d="
-                M80 470
-                C180 440, 260 430, 340 410
-                S520 350, 620 320
-                S760 260, 860 230
-                S1020 170, 1120 120
-                S1260 70, 1320 40
+                M80 400
+                C180 375, 260 345, 340 320
+                S520 255, 620 220
+                S760 175, 860 140
+                S1020 85, 1120 57
+                S1260 41, 1320 33
               "
             />
+
+            <path className="moving-arrow" d="M0,-18 L40,0 L0,18 Z">
+              <animateMotion
+                dur="5s"
+                repeatCount="indefinite"
+                rotate="auto"
+                calcMode="linear"
+                keyTimes="0;0.45;0.7;1"
+                keyPoints="0;1;1;1"
+                path="
+                  M90 397
+                  C180 375, 260 345, 340 320
+                  S520 255, 620 220
+                  S760 175, 860 140
+                  S1020 85, 1120 57
+                  S1260 41, 1320 33
+                "
+              />
+              <animate
+                attributeName="opacity"
+                dur="5s"
+                repeatCount="indefinite"
+                values="0;1;1;0;0"
+                keyTimes="0;0.08;0.7;0.74;1"
+              />
+            </path>
 
           </svg>
 
