@@ -512,7 +512,7 @@
     0 18px 36px rgba(0, 0, 0, 0.34);
 }
 
-.mention-picker button {
+.comment-form .mention-picker button {
   display: grid;
 
   justify-self: stretch;
@@ -527,7 +527,12 @@
 
   color: #f7f7f2;
 
-  background: rgba(255, 255, 255, 0.04);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(48,75,130,0.92),
+      rgba(31,56,104,0.92)
+    );
 
   text-align: left;
 
@@ -535,13 +540,34 @@
 
   transition:
     background 0.2s ease,
-    border-color 0.2s ease;
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.mention-picker button:hover {
-  background: rgba(143, 179, 255, 0.14);
+.comment-form .mention-picker button:hover {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(135,170,245,0.98),
+      rgba(112,151,232,0.98)
+    );
 
-  border-color: rgba(143,179,255,0.28);
+  border-color: rgba(190,211,255,0.68);
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.comment-form .mention-picker button:hover strong {
+  color: #061027;
+}
+
+.comment-form .mention-picker button:hover span {
+  color: rgba(255,255,255,0.78);
 }
 
 .mention-picker span {
@@ -587,9 +613,11 @@
 }
 
 .mention-chip-list button span {
-  color: #fca5a5;
+  color: #ef4444;
 
   font-size: 11px;
+
+  font-weight: 900;
 }
 
 .comment-form button {

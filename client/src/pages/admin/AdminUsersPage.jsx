@@ -87,9 +87,10 @@ export default function AdminUsersPage() {
         <p className="admin-placeholder-text">Loading users…</p>
       ) : (
         <div className="admin-table-wrapper">
-          <table className="admin-table">
+          <table className="admin-table admin-users-table">
             <thead>
               <tr>
+                <th>Edit</th>
                 <th>Name</th>
                 <th>Email</th>
                 <th>Role</th>
@@ -98,7 +99,6 @@ export default function AdminUsersPage() {
                 <th>Activity</th>
                 <th>Last login</th>
                 <th>Created</th>
-                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -109,6 +109,9 @@ export default function AdminUsersPage() {
               ) : (
                 filteredUsers.map((u) => (
                   <tr key={u.id}>
+                    <td>
+                      <button type="button" className="btn-edit" onClick={() => setEditingUser(u)}>Edit</button>
+                    </td>
                     <td>{u.name}</td>
                     <td>{u.email}</td>
                     <td><span className={`admin-pill role-${u.role}`}>{u.role}</span></td>
@@ -142,9 +145,6 @@ export default function AdminUsersPage() {
                     </td>
                     <td>{formatLastLogin(u.lastLoginAt)}</td>
                     <td>{u.createdAt}</td>
-                    <td>
-                      <button type="button" className="btn-edit" onClick={() => setEditingUser(u)}>Edit</button>
-                    </td>
                   </tr>
                 ))
               )}

@@ -81,16 +81,16 @@ export default function AdminTeamsPage() {
         <p className="admin-placeholder-text">Loading teams…</p>
       ) : (
         <div className="admin-table-wrapper">
-          <table className="admin-table">
+          <table className="admin-table admin-teams-table">
             <thead>
               <tr>
+                <th>Edit</th>
                 <th>Name</th>
                 <th>Department</th>
                 <th>Description</th>
                 <th>Status</th>
                 <th>Members</th>
                 <th>Activity</th>
-                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -101,6 +101,9 @@ export default function AdminTeamsPage() {
               ) : (
                 filteredTeams.map((team) => (
                   <tr key={team.id}>
+                    <td>
+                      <button type="button" className="btn-edit" onClick={() => setModalTarget(team)}>Edit</button>
+                    </td>
                     <td>{team.name}</td>
                     <td>{team.department || <span className="admin-muted">—</span>}</td>
                     <td className="team-description">
@@ -131,9 +134,6 @@ export default function AdminTeamsPage() {
                           <span className="activity-num">{team.activity.overdue}</span>
                         </span>
                       </div>
-                    </td>
-                    <td>
-                      <button type="button" className="btn-edit" onClick={() => setModalTarget(team)}>Edit</button>
                     </td>
                   </tr>
                 ))
