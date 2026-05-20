@@ -7,6 +7,7 @@ import 'express-async-errors';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
+import { UPLOADS_ROOT } from './controllers/meController.js';
 import adminRoutes from './routes/adminRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import meRoutes from './routes/meRoutes.js';
@@ -31,6 +32,10 @@ app.use(cookieParser());
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
+
+// Serve uploaded user content (avatars, etc) statically. CORS is irrelevant
+// for static files; Vite proxies /uploads/* to us in dev.
+app.use('/uploads', express.static(UPLOADS_ROOT, { fallthrough: false }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/me', meRoutes);

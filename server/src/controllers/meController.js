@@ -1,7 +1,77 @@
 import bcrypt from 'bcryptjs';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import multer from 'multer';
 import { query } from '../db.js';
 import { httpError } from '../utils/httpError.js';
 import { clearSessionCookie, issueVerificationCode } from './authController.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Avatars live under server/uploads/avatars/. The folder is created at
+// first upload and gitignored — never commit user content.
+export const UPLOADS_ROOT = path.join(__dirname, '..', '..', 'uploads');
+const AVATAR_DIR = path.join(UPLOADS_ROOT, 'avatars');
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024; // 5MB
+const ALLOWED_AVATAR_MIME = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+]);
+const AVATAR_EXT_BY_MIME = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+};
+
+const avatarStorage = multer.diskStorage({
+  destination: async (req, file, cb) => {
+    try {
+      await fs.mkdir(AVATAR_DIR, { recursive: true });
+      cb(null, AVATAR_DIR);
+    } catch (err) {
+      cb(err);
+    }
+  },
+  filename: (req, file, cb) => {
+    const ext = AVATAR_EXT_BY_MIME[file.mimetype] || 'bin';
+    // Filename embeds the user id and a timestamp. The id is the
+    // authenticated user (set by authMiddleware before this runs), so
+    // a client can't write under another user's namespace.
+    cb(null, `user-${req.user.id}-${Date.now()}.${ext}`);
+  },
+});
+
+export const avatarUploadMiddleware = multer({
+  storage: avatarStorage,
+  limits: { fileSize: MAX_AVATAR_BYTES },
+  fileFilter: (req, file, cb) => {
+    if (!ALLOWED_AVATAR_MIME.has(file.mimetype)) {
+      cb(httpError(400, 'Only JPEG, PNG, WEBP, or GIF images are allowed.'));
+      return;
+    }
+    cb(null, true);
+  },
+}).single('avatar');
+
+async function deletePreviousAvatarFile(currentUrl) {
+  if (!currentUrl) return;
+  // Only delete files that look like ours; never follow paths outside
+  // the avatar directory.
+  if (!currentUrl.startsWith('/uploads/avatars/')) return;
+  const filename = path.basename(currentUrl);
+  const fullPath = path.join(AVATAR_DIR, filename);
+  // Best-effort — if the file is already missing or unwritable, log and move on.
+  try {
+    await fs.unlink(fullPath);
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      console.error('[avatar] Failed to remove previous file:', err);
+    }
+  }
+}
 
 // One-row profile select. Same shape used by every endpoint in this file
 // after a write — we always return the fresh state so the frontend doesn't
@@ -144,6 +214,32 @@ export async function changeMyEmail(req, res) {
     message: `A verification code has been sent to ${normalizedEmail}. Verify your new email, then log in.`,
     email: normalizedEmail,
   });
+}
+
+export async function uploadMyAvatar(req, res) {
+  if (!req.file) {
+    throw httpError(400, 'No file uploaded.');
+  }
+
+  // If the user already had an avatar, remove the old file from disk.
+  // Failure to remove is logged but doesn't block the upload.
+  const previous = await query('SELECT avatar_url FROM users WHERE id = $1', [req.user.id]);
+  await deletePreviousAvatarFile(previous.rows[0]?.avatar_url);
+
+  const url = `/uploads/avatars/${req.file.filename}`;
+  await query('UPDATE users SET avatar_url = $1 WHERE id = $2', [url, req.user.id]);
+
+  const result = await query(meSelect, [req.user.id]);
+  return res.json(mapMeRow(result.rows[0]));
+}
+
+export async function deleteMyAvatar(req, res) {
+  const previous = await query('SELECT avatar_url FROM users WHERE id = $1', [req.user.id]);
+  await deletePreviousAvatarFile(previous.rows[0]?.avatar_url);
+  await query('UPDATE users SET avatar_url = NULL WHERE id = $1', [req.user.id]);
+
+  const result = await query(meSelect, [req.user.id]);
+  return res.json(mapMeRow(result.rows[0]));
 }
 
 export async function changeMyPassword(req, res) {
