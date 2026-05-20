@@ -9,6 +9,7 @@ import cors from 'cors';
 import express from 'express';
 import adminRoutes from './routes/adminRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import meRoutes from './routes/meRoutes.js';
 import siteRoutes from './routes/siteRoutes.js';
 import teamRoutes from './routes/teamRoutes.js';
 import ticketRoutes from './routes/ticketRoutes.js';
@@ -32,6 +33,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/me', meRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/teams', teamRoutes);
