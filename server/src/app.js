@@ -8,6 +8,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
 import adminRoutes from './routes/adminRoutes.js';
+import assistantRoutes from './routes/assistantRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import siteRoutes from './routes/siteRoutes.js';
 import teamRoutes from './routes/teamRoutes.js';
@@ -32,6 +33,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/assistant', assistantRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/teams', teamRoutes);
