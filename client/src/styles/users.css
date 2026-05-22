@@ -163,7 +163,8 @@
 }
 
 .users-table select option {
-  color: #101010;
+  color: #f7f7f2;
+  background: #132851;
 }
 
 .unauthorized-overlay {

@@ -22,6 +22,22 @@ body {
     sans-serif;
 }
 
+select {
+  color: #f7f7f2;
+  background-color: #182d58;
+}
+
+select option,
+select optgroup {
+  color: #f7f7f2 !important;
+  background-color: #132851 !important;
+}
+
+select option:checked {
+  color: #ffffff !important;
+  background-color: #244b95 !important;
+}
+
 /* PAGE */
 
 .home-page {

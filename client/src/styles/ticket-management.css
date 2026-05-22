@@ -262,7 +262,8 @@
 
 .toolbar-panel select option,
 .modal-card select option {
-  color: #101010;
+  color: #f7f7f2;
+  background: #132851;
 }
 
 .viewer-note {
