@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from './AuthContext';
+import ChatAssistant from '../components/ChatAssistant';
 
 export function ProtectedRoute() {
   const { isAuthenticated, isBootstrapping } = useAuth();
@@ -9,7 +10,12 @@ export function ProtectedRoute() {
   if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
-  return <Outlet />;
+  return (
+    <>
+      <Outlet />
+      <ChatAssistant />
+    </>
+  );
 }
 
 export function PublicOnlyRoute() {
