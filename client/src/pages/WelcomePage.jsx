@@ -5,7 +5,7 @@ import '../styles/welcome.css';
 import { fetchTickets } from '../utils/tickets';
 import { fetchMentionNotifications } from '../utils/users';
 
-function QuickCard({ to, icon, label }) {
+function QuickCard({ to, icon, label, className = '' }) {
   const content = (
     <>
       <img src={icon} className="card-icon" alt="" />
@@ -14,10 +14,10 @@ function QuickCard({ to, icon, label }) {
   );
 
   if (to) {
-    return <Link to={to} className="card">{content}</Link>;
+    return <Link to={to} className={`card ${className}`.trim()}>{content}</Link>;
   }
 
-  return <div className="card">{content}</div>;
+  return <div className={`card ${className}`.trim()}>{content}</div>;
 }
 
 function getNotificationSeenKey(user) {
@@ -366,12 +366,11 @@ useEffect(() => {
               <QuickCard to="/tickets" icon="/assets/login-welcome/Images/ticket.svg" label="Ticket" />
               <QuickCard icon="/assets/login-welcome/Images/report.svg" label="Reports" />
               <QuickCard to="/statistics" icon="/assets/login-welcome/Images/analytics.svg" label="Analytics" />
-              <QuickCard to="/users" icon="/assets/login-welcome/Images/user.svg" label="Users" />
-              <QuickCard to="/profile" icon="/assets/login-welcome/Images/user.svg" label="My Profile" />
+              <QuickCard to="/profile" icon="/assets/login-welcome/Images/user.svg" label="My Profile" className="profile-card" />
               {role === 'admin' && (
-                <QuickCard to="/admin" icon="/assets/login-welcome/Images/setting.svg" label="Admin Panel" />
+                <QuickCard to="/admin" icon="/assets/login-welcome/Images/setting.svg" label="Admin Panel" className="admin-panel-card" />
               )}
-              <QuickCard icon="/assets/login-welcome/Images/setting.svg" label="Settings" />
+              <QuickCard icon="/assets/login-welcome/Images/setting.svg" label="Settings" className="settings-card" />
             </div>
           </div>
 

@@ -8,7 +8,6 @@ import TicketManagementPage from './pages/TicketManagementPage';
 import ProfilePage from './pages/ProfilePage';
 import StatisticsPage from './pages/StatisticsPage';
 import TicketDetailPage from './pages/TicketDetailPage';
-import UsersPage from './pages/UsersPage';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminTeamsPage from './pages/admin/AdminTeamsPage';
@@ -29,7 +28,6 @@ export default function App() {
         <Route path="/tickets" element={<TicketManagementPage />} />
         <Route path="/tickets/:id" element={<TicketDetailPage />} />
         <Route path="/statistics" element={<StatisticsPage />} />
-        <Route path="/users" element={<UsersPage />} />
         <Route path="/profile" element={<ProfilePage />} />
 
         <Route element={<RoleRoute allowedRoles={['admin']} />}>

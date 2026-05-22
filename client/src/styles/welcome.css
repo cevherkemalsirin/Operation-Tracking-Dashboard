@@ -758,22 +758,17 @@ isolation: isolate;
     url('/assets/login-welcome/Images/analys.jpg');
 }
 
-.welcome-page .links .card:nth-child(5) {
-  background-image:
-    url('/assets/login-welcome/Images/users.jpg');
-}
-
-.welcome-page .links .card:nth-child(6) {
+.welcome-page .links .profile-card {
   background-image:
     url('/assets/login-welcome/Images/my profile.jpg');
 }
 
-.welcome-page .links .card:nth-child(7) {
+.welcome-page .links .admin-panel-card {
   background-image:
     url('/assets/login-welcome/Images/admin panel.jpg');
 }
 
-.welcome-page .links .card:nth-child(8) {
+.welcome-page .links .settings-card {
   background-image:
     url('/assets/login-welcome/Images/setting.jpg');
 }
