@@ -13,21 +13,8 @@
   color: #fff;
 
   background:
-    linear-gradient(
-      rgba(3, 10, 30, 0.82),
-      rgba(5, 15, 40, 0.92)
-    ),
-    
-linear-gradient(
-  135deg,
-  #020617 0%,
-  #07112b 35%,
-  #0b1736 70%,
-  #081227 100%
-);
-    
-
-  
+    linear-gradient(135deg, rgba(143, 179, 255, 0.16), transparent 30%),
+    linear-gradient(to top, #020617, #1c3883);
 }
 .welcome-page::before {
   content: "";
