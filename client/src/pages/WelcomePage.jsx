@@ -1,5 +1,5 @@
 import {  useEffect, useMemo, useState} from 'react';
-import { Link } from 'react-router-dom';
+import { Link ,useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth';
 import '../styles/welcome.css';
 import { fetchTickets } from '../utils/tickets';
@@ -27,6 +27,12 @@ export default function WelcomePage() {
   const [recentActivity, setRecentActivity] = useState([]);
   const [tickets, setTickets] = useState([]);
   const now = new Date();
+  const navigate = useNavigate();
+  const assigneeAvatars = {
+  "Melika Javidfar": "/assets/login-welcome/Images/melika.jpg",
+  "Cevher Kemal Sirin":"/assets/login-welcome/Images/cevher.jpg",
+  "Vlad Popescu": "/assets/login-welcome/Images/vlad.jpg",
+};
   const [displayedMonthDate, setDisplayedMonthDate] = useState(() => new Date(now.getFullYear(), now.getMonth(), 1));
   const currentMonth = displayedMonthDate.toLocaleString('default', {
   month: 'long',
@@ -361,6 +367,75 @@ const topActiveTickets = useMemo(() => {
               <QuickCard icon="/assets/login-welcome/Images/setting.svg" label="Settings" className="settings-card" />
             </div>
           </div>
+          <div className="active-tickets-panel">
+  <div className="active-tickets-header">
+    <h3>Top Active Tickets</h3>
+
+    <Link to="/tickets">
+      View All
+    </Link>
+  </div>
+
+  <table className="active-tickets-table">
+    <thead>
+      <tr>
+        <th>Ticket ID</th>
+        <th>Title</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Assignee</th>
+      </tr>
+    </thead>
+
+    
+      <tbody>
+  {topActiveTickets.map((ticket) => (
+    <tr
+      key={ticket.id}
+      onClick={() =>
+        navigate(`/tickets/${encodeURIComponent(ticket.id)}`)
+      }
+      style={{ cursor: "pointer" }}
+    >
+      <td>{ticket.id}</td>
+
+      <td>
+        {ticket.description?.slice(0, 50) || "Incident"}
+      </td>
+
+      <td>
+        <span
+          className={`priority-pill priority-${ticket.priority?.toLowerCase()}`}
+        >
+          {ticket.priority}
+        </span>
+      </td>
+
+      <td>
+        <span
+          className={`status-badge status-${ticket.status?.toLowerCase()}`}
+        >
+          {ticket.status}
+        </span>
+      </td>
+
+      <td>
+  <div className="assignee-cell">
+    <img
+      src={assigneeAvatars[ticket.Owner]}
+      alt={ticket.Owner}
+      className="assignee-avatar"
+    />
+
+    <span>{ticket.Owner}</span>
+  </div>
+</td>
+    </tr>
+  ))}
+
+    </tbody>
+  </table>
+</div>
 
           <div className="support">
              <h3>24/7 Support</h3>
@@ -395,32 +470,7 @@ const topActiveTickets = useMemo(() => {
           {weatherWidget}
           {calendarWidget}
 
-          <div className="card-box">
-  <h3>Top Active Tickets</h3>
-
-  {topActiveTickets.length === 0 ? (
-    <p>No active incidents</p>
-  ) : (
-    topActiveTickets.map((ticket) => (
-      <Link
-        key={ticket.id}
-        to={`/tickets/${encodeURIComponent(ticket.id)}`}
-        className="top-ticket-item"
-      >
-        <strong>{ticket.id}</strong>
-
-        <span>
-          {ticket.description?.slice(0, 45) || "Incident"}
-        </span>
-
-        <small>
-          {ticket.priority} • {ticket.status}
-        </small>
-      </Link>
-    ))
-  )}
-</div>
-
+          
           <div className="card-box">
             <h3>Recent Activity</h3>
             {recentActivity.map((activity) => (
